@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="動物の絵文字で遊ぶ神経衰弱ゲーム">
+    <meta name="theme-color" content="#ff6b9d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>神経衰弱ゲーム 🎮</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+            background: linear-gradient(135deg, #ffeef8 0%, #fce4ec 50%, #f8bbd0 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #880e4f;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            color: #880e4f;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .difficulty-selector {
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .difficulty-btn {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #f06292 0%, #e91e63 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(240, 98, 146, 0.3);
+        }
+
+        .difficulty-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(240, 98, 146, 0.4);
+        }
+
+        .difficulty-btn:active {
+            transform: translateY(0);
+        }
+
+        .difficulty-btn.active {
+            background: linear-gradient(135deg, #ff6b9d 0%, #ff4081 100%);
+            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.5);
+        }
+
+        .game-board {
+            display: grid;
+            gap: 15px;
+            margin: 30px auto;
+            justify-content: center;
+            max-width: 100%;
+        }
+
+        .game-board.easy {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .game-board.medium {
+            grid-template-columns: repeat(5, 1fr);
+        }
+
+        .game-board.hard {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .card {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4em;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(136, 14, 79, 0.2);
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .card::before {
+            content: '?';
+            position: absolute;
+            font-size: 3em;
+            color: #f06292;
+            font-weight: bold;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card.flipped::before {
+            display: none;
+        }
+
+        .card.matched {
+            opacity: 0.6;
+            cursor: default;
+            transform: scale(0.95);
+        }
+
+        .card.matched::before {
+            display: none;
+        }
+
+        .card:active:not(.matched):not(.flipped) {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 600px) {
+            .game-board {
+                gap: 10px;
+            }
+
+            .card {
+                font-size: 3em;
+                border-radius: 12px;
+            }
+
+            .card::before {
+                font-size: 2.5em;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .difficulty-btn {
+                padding: 12px 20px;
+                font-size: 16px;
+            }
+        }
+
+        .stats {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #880e4f;
+        }
+
+        /* ペア成功時のメッセージ */
+        .success-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+            font-weight: bold;
+            color: #e91e63;
+            z-index: 1000;
+            pointer-events: none;
+            animation: popIn 0.5s ease-out;
+            text-shadow: 0 0 20px rgba(233, 30, 99, 0.5);
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* 紙吹雪エフェクト */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #ff6b9d;
+            position: absolute;
+            animation: confetti-fall 3s linear forwards;
+            z-index: 999;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* 完了メッセージ */
+        .completion-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .completion-modal.show {
+            display: flex;
+        }
+
+        .completion-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+            animation: modalPopIn 0.5s ease-out;
+        }
+
+        @keyframes modalPopIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .completion-content h2 {
+            font-size: 2.5em;
+            color: #e91e63;
+            margin-bottom: 20px;
+        }
+
+        .completion-content p {
+            font-size: 1.3em;
+            color: #880e4f;
+            margin-bottom: 30px;
+        }
+
+        .restart-btn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #f06292 0%, #e91e63 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .restart-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* カードめくり音の視覚的フィードバック */
+        .card.flip-animation {
+            animation: flipCard 0.3s ease-out;
+        }
+
+        @keyframes flipCard {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(0.9);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎮 神経衰弱ゲーム</h1>
+        
+        <div class="difficulty-selector">
+            <button class="difficulty-btn active" onclick="startGame(8)">8枚（4ペア）</button>
+            <button class="difficulty-btn" onclick="startGame(10)">10枚（5ペア）</button>
+            <button class="difficulty-btn" onclick="startGame(12)">12枚（6ペア）</button>
+        </div>
+
+        <div id="gameBoard" class="game-board"></div>
+
+        <div class="stats">
+            <div>ペア数: <span id="pairsFound">0</span> / <span id="totalPairs">4</span></div>
+            <div style="margin-top: 10px;">めくった回数: <span id="moves">0</span></div>
+        </div>
+    </div>
+
+    <div id="completionModal" class="completion-modal">
+        <div class="completion-content">
+            <h2>🎉 おめでとう！</h2>
+            <p>全部揃いました！</p>
+            <p style="font-size: 1em; margin-top: 10px;">めくった回数: <span id="finalMoves">0</span></p>
+            <button class="restart-btn" onclick="restartGame()">もう一度遊ぶ</button>
+        </div>
+    </div>
+
+    <script>
+        // 動物の絵文字リスト
+        const animals = ['🐶', '🐱', '🐰', '🦁', '🐼', '🦄', '🐸', '🐯', '🐨', '🐻', '🐷', '🐮'];
+        
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        let totalPairs = 4;
+        let canFlip = true;
+
+        // ゲーム開始
+        function startGame(cardCount) {
+            // 難易度ボタンのアクティブ状態を更新
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            totalPairs = cardCount / 2;
+            matchedPairs = 0;
+            moves = 0;
+            flippedCards = [];
+            canFlip = true;
+
+            // カードを生成
+            const selectedAnimals = animals.slice(0, totalPairs);
+            cards = [...selectedAnimals, ...selectedAnimals];
+            
+            // シャッフル
+            shuffleArray(cards);
+
+            // ゲームボードをクリア
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+            
+            // グリッドクラスを設定
+            gameBoard.className = 'game-board';
+            if (cardCount === 8) {
+                gameBoard.classList.add('easy');
+            } else if (cardCount === 10) {
+                gameBoard.classList.add('medium');
+            } else {
+                gameBoard.classList.add('hard');
+            }
+
+            // カードを作成
+            cards.forEach((animal, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.index = index;
+                card.dataset.animal = animal;
+                card.onclick = () => flipCard(index);
+                gameBoard.appendChild(card);
+            });
+
+            // 統計を更新
+            document.getElementById('totalPairs').textContent = totalPairs;
+            document.getElementById('pairsFound').textContent = matchedPairs;
+            document.getElementById('moves').textContent = moves;
+
+            // モーダルを非表示
+            document.getElementById('completionModal').classList.remove('show');
+        }
+
+        // 配列をシャッフル
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // カードをめくる
+        function flipCard(index) {
+            if (!canFlip) return;
+
+            const card = document.querySelector(`[data-index="${index}"]`);
+            
+            // 既にめくられているか、マッチ済みのカードは無視
+            if (card.classList.contains('flipped') || card.classList.contains('matched')) {
+                return;
+            }
+
+            // 2枚以上めくられている場合は無視
+            if (flippedCards.length >= 2) {
+                return;
+            }
+
+            // カードをめくる
+            card.classList.add('flipped');
+            card.classList.add('flip-animation');
+            card.textContent = card.dataset.animal;
+            flippedCards.push({ index, animal: card.dataset.animal, element: card });
+
+            // 音の視覚的フィードバック（ポンッという感じ）
+            setTimeout(() => {
+                card.classList.remove('flip-animation');
+            }, 300);
+
+            // 2枚めくられたらチェック
+            if (flippedCards.length === 2) {
+                moves++;
+                document.getElementById('moves').textContent = moves;
+                canFlip = false;
+
+                setTimeout(() => {
+                    checkMatch();
+                }, 500);
+            }
+        }
+
+        // ペアが揃っているかチェック
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+
+            if (card1.animal === card2.animal) {
+                // ペアが揃った！
+                card1.element.classList.add('matched');
+                card2.element.classList.add('matched');
+                matchedPairs++;
+                document.getElementById('pairsFound').textContent = matchedPairs;
+
+                // 「やったー！」メッセージを表示
+                showSuccessMessage();
+                
+                // 紙吹雪エフェクト
+                createConfetti();
+
+                // 全部揃ったかチェック
+                if (matchedPairs === totalPairs) {
+                    setTimeout(() => {
+                        showCompletion();
+                    }, 1000);
+                } else {
+                    flippedCards = [];
+                    canFlip = true;
+                }
+            } else {
+                // ペアが揃わなかった
+                setTimeout(() => {
+                    card1.element.classList.remove('flipped');
+                    card2.element.classList.remove('flipped');
+                    card1.element.textContent = '';
+                    card2.element.textContent = '';
+                    flippedCards = [];
+                    canFlip = true;
+                }, 1000);
+            }
+        }
+
+        // 成功メッセージを表示
+        function showSuccessMessage() {
+            const message = document.createElement('div');
+            message.className = 'success-message';
+            message.textContent = 'やったー！';
+            document.body.appendChild(message);
+
+            setTimeout(() => {
+                message.remove();
+            }, 1500);
+        }
+
+        // 紙吹雪エフェクトを作成
+        function createConfetti() {
+            const colors = ['#ff6b9d', '#f06292', '#e91e63', '#ff4081', '#ff80ab', '#f8bbd0'];
+            const confettiCount = 50;
+
+            for (let i = 0; i < confettiCount; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                confetti.style.width = (Math.random() * 10 + 5) + 'px';
+                confetti.style.height = (Math.random() * 10 + 5) + 'px';
+                document.body.appendChild(confetti);
+
+                setTimeout(() => {
+                    confetti.remove();
+                }, 3000);
+            }
+        }
+
+        // 完了モーダルを表示
+        function showCompletion() {
+            document.getElementById('finalMoves').textContent = moves;
+            document.getElementById('completionModal').classList.add('show');
+            
+            // お祝いの紙吹雪
+            for (let i = 0; i < 100; i++) {
+                setTimeout(() => {
+                    createConfetti();
+                }, i * 50);
+            }
+        }
+
+        // ゲームを再開
+        function restartGame() {
+            const activeBtn = document.querySelector('.difficulty-btn.active');
+            const cardCount = activeBtn.textContent.includes('8') ? 8 : 
+                            activeBtn.textContent.includes('10') ? 10 : 12;
+            startGame(cardCount);
+        }
+
+        // 初期ゲーム開始
+        window.addEventListener('DOMContentLoaded', () => {
+            startGame(8);
+        });
+    </script>
+</body>
+</html>
