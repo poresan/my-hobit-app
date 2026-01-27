@@ -435,9 +435,77 @@
 
         // 物理定数
         const gravity = 0.2; // よりフワッと浮遊感を出すために下げる
-        const jumpPower = -16;
+        const jumpPower = -13; // 飛び上がりのスピードをゆっくりに
         const groundFriction = 0.9;
         const maxJumpHeight = 220; // 最大ジャンプ高さ（画面からはみ出ないように）
+
+        // オーディオコンテキスト（効果音用）
+        let audioContext = null;
+        
+        // オーディオコンテキストを初期化
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // ジャンプ効果音を再生
+        function playJumpSound() {
+            if (!audioContext) {
+                initAudioContext();
+            }
+            
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 440; // A4
+            oscillator.type = 'sine';
+
+            // 音量のエンベロープ（短く軽快な音）
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.01);
+            gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.1);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        // ゲームオーバー効果音を再生
+        function playGameOverSound() {
+            if (!audioContext) {
+                initAudioContext();
+            }
+            
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 220; // A3（低い音）
+            oscillator.type = 'sawtooth';
+
+            // 音量のエンベロープ（下降する音）
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+            oscillator.frequency.exponentialRampToValueAtTime(110, audioContext.currentTime + 0.3);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
 
         // ステージを読み込む
         function loadStage(stageNumber) {
@@ -469,6 +537,7 @@
             if (!player.isJumping && gameRunning && !gamePaused) {
                 player.velocityY = jumpPower;
                 player.isJumping = true;
+                playJumpSound(); // ジャンプ効果音
             }
         }
 
@@ -595,19 +664,19 @@
             }
 
             // 落とし穴との衝突（プレイヤーが落とし穴の上にいて、地面より下に落ちた場合）
-            // ただし、自キャラが1ピクセルでも地面と接触していれば死なない
+            // 自キャラが少しでも地面に接していれば死なない
             for (let pit of pits) {
                 const pitScreenX = pit.x - cameraX;
                 // プレイヤーが落とし穴の範囲内にいる
                 if (player.x + player.width > pitScreenX &&
                     player.x < pitScreenX + pit.width) {
                     // プレイヤーの足（player.y + player.height）が地面（pit.y）より下に落ちた場合
-                    // ただし、1ピクセルでも地面と接触していれば（player.y + player.height <= pit.y + 1）死なない
+                    // 自キャラが少しでも地面に接していれば死なない（より寛容に）
                     const playerBottom = player.y + player.height;
                     const groundLevel = pit.y;
                     
-                    // 完全に地面より下に落ちた場合のみ死ぬ（1ピクセルの余裕を持たせる）
-                    if (playerBottom > groundLevel + 1) {
+                    // 完全に地面より下に落ちた場合のみ死ぬ（5ピクセルの余裕を持たせる）
+                    if (playerBottom > groundLevel + 5) {
                         return true;
                     }
                 }
@@ -825,6 +894,7 @@
         function gameOver() {
             gameRunning = false;
             gamePaused = true;
+            playGameOverSound(); // ゲームオーバー効果音
             document.getElementById('gameOverModal').classList.add('show');
         }
 
@@ -930,6 +1000,21 @@
 
         // 初期化
         updateLastUpdateTime();
+        // オーディオコンテキストを初期化（ユーザーインタラクション後に有効化される）
+        
+        // ユーザーインタラクションでオーディオコンテキストを初期化
+        document.addEventListener('click', () => {
+            if (!audioContext) {
+                initAudioContext();
+            }
+        }, { once: true });
+
+        document.addEventListener('touchstart', () => {
+            if (!audioContext) {
+                initAudioContext();
+            }
+        }, { once: true });
+        
         // ゲームは自動開始しない（スタートボタンを待つ）
     </script>
 </body>
