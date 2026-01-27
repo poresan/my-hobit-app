@@ -389,10 +389,10 @@
         ];
 
         // 物理定数
-        const gravity = 0.4;
-        const jumpPower = -14;
+        const gravity = 0.35;
+        const jumpPower = -16;
         const groundFriction = 0.9;
-        const maxJumpHeight = 200; // 最大ジャンプ高さ（画面からはみ出ないように）
+        const maxJumpHeight = 220; // 最大ジャンプ高さ（画面からはみ出ないように）
 
         // ステージを読み込む
         function loadStage(stageNumber) {
@@ -430,13 +430,18 @@
         // プレイヤーが障害物の上にいるかチェック
         function isOnObstacle(obs) {
             const obsScreenX = obs.x - cameraX;
-            const tolerance = 5; // 許容誤差
+            const tolerance = 10; // 許容誤差（大きくする）
             
             // プレイヤーの足が障害物の上にあるか
-            return player.x + player.width > obsScreenX + tolerance &&
-                   player.x < obsScreenX + obs.width - tolerance &&
-                   Math.abs((player.y + player.height) - obs.y) < tolerance &&
-                   player.velocityY >= 0; // 落下中または着地時
+            // より寛容な判定：プレイヤーの下半分が障害物の上にある
+            const playerBottom = player.y + player.height;
+            const playerCenterX = player.x + player.width / 2;
+            
+            return playerCenterX > obsScreenX + tolerance &&
+                   playerCenterX < obsScreenX + obs.width - tolerance &&
+                   playerBottom >= obs.y - tolerance &&
+                   playerBottom <= obs.y + tolerance &&
+                   player.velocityY >= -2; // 落下中または着地時（少し上昇中でもOK）
         }
 
         // 衝突判定
@@ -445,16 +450,35 @@
             for (let obs of obstacles) {
                 const obsScreenX = obs.x - cameraX;
                 
-                // 四角の障害物の場合、上から踏める
+                // 四角の障害物の場合
                 if (obs.type === 'box') {
-                    // 上から踏んでいる場合は衝突しない
+                    // 上から踏んでいる場合は完全にスキップ
                     if (isOnObstacle(obs)) {
                         continue;
                     }
-                }
-                
-                // 三角の障害物または四角の障害物の側面・下からの衝突
-                if (obs.type === 'triangle') {
+                    
+                    // 四角の障害物の側面・下からの衝突のみ判定
+                    // プレイヤーが障害物の上にいない場合のみ衝突判定
+                    const playerBottom = player.y + player.height;
+                    const playerTop = player.y;
+                    const obsTop = obs.y;
+                    const obsBottom = obs.y + obs.height;
+                    
+                    // 側面からの衝突（左右）
+                    if ((player.x + player.width > obsScreenX && player.x + player.width < obsScreenX + 10 && 
+                         playerTop < obsBottom && playerBottom > obsTop) ||
+                        (player.x < obsScreenX + obs.width && player.x > obsScreenX + obs.width - 10 &&
+                         playerTop < obsBottom && playerBottom > obsTop)) {
+                        return true;
+                    }
+                    
+                    // 下からの衝突（プレイヤーが障害物の下にいて、上に衝突）
+                    if (playerBottom > obsTop && playerTop < obsTop &&
+                        player.x + player.width > obsScreenX + 5 &&
+                        player.x < obsScreenX + obs.width - 5) {
+                        return true;
+                    }
+                } else if (obs.type === 'triangle') {
                     // 三角の障害物は上から踏んでも死ぬ（どの方向からでも衝突）
                     const topY = obs.y;
                     const bottomY = obs.y + obs.height;
@@ -479,14 +503,6 @@
                         if (playerCenterY > minY && playerCenterY < bottomY) {
                             return true;
                         }
-                    }
-                } else {
-                    // 四角の障害物の側面・下からの衝突
-                    if (player.x < obsScreenX + obs.width &&
-                        player.x + player.width > obsScreenX &&
-                        player.y < obs.y + obs.height &&
-                        player.y + player.height > obs.y) {
-                        return true;
                     }
                 }
             }
