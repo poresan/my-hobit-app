@@ -346,9 +346,9 @@
         const stages = [
             {
                 obstacles: [
-                    { x: 500, width: 60, height: 80 },
-                    { x: 800, width: 60, height: 100 },
-                    { x: 1200, width: 60, height: 60 }
+                    { x: 500, width: 60, height: 80, type: 'box' },
+                    { x: 800, width: 60, height: 100, type: 'box' },
+                    { x: 1200, width: 60, height: 60, type: 'triangle' }
                 ],
                 pits: [
                     { x: 650, width: 100 },
@@ -358,10 +358,10 @@
             },
             {
                 obstacles: [
-                    { x: 400, width: 60, height: 90 },
-                    { x: 700, width: 60, height: 110 },
-                    { x: 1000, width: 60, height: 70 },
-                    { x: 1300, width: 60, height: 100 }
+                    { x: 400, width: 60, height: 90, type: 'box' },
+                    { x: 700, width: 60, height: 110, type: 'triangle' },
+                    { x: 1000, width: 60, height: 70, type: 'box' },
+                    { x: 1300, width: 60, height: 100, type: 'triangle' }
                 ],
                 pits: [
                     { x: 550, width: 120 },
@@ -372,11 +372,11 @@
             },
             {
                 obstacles: [
-                    { x: 350, width: 60, height: 100 },
-                    { x: 600, width: 60, height: 120 },
-                    { x: 850, width: 60, height: 80 },
-                    { x: 1100, width: 60, height: 110 },
-                    { x: 1350, width: 60, height: 95 }
+                    { x: 350, width: 60, height: 100, type: 'box' },
+                    { x: 600, width: 60, height: 120, type: 'triangle' },
+                    { x: 850, width: 60, height: 80, type: 'box' },
+                    { x: 1100, width: 60, height: 110, type: 'triangle' },
+                    { x: 1350, width: 60, height: 95, type: 'box' }
                 ],
                 pits: [
                     { x: 500, width: 80 },
@@ -389,16 +389,18 @@
         ];
 
         // 物理定数
-        const gravity = 0.5;
-        const jumpPower = -20;
+        const gravity = 0.4;
+        const jumpPower = -14;
         const groundFriction = 0.9;
+        const maxJumpHeight = 200; // 最大ジャンプ高さ（画面からはみ出ないように）
 
         // ステージを読み込む
         function loadStage(stageNumber) {
             const stage = stages[stageNumber - 1];
             obstacles = stage.obstacles.map(obs => ({
                 ...obs,
-                y: canvas.height - groundHeight - obs.height
+                y: canvas.height - groundHeight - obs.height,
+                type: obs.type || 'box' // デフォルトはbox
             }));
             pits = stage.pits.map(pit => ({
                 ...pit,
@@ -425,26 +427,80 @@
             }
         }
 
+        // プレイヤーが障害物の上にいるかチェック
+        function isOnObstacle(obs) {
+            const obsScreenX = obs.x - cameraX;
+            const tolerance = 5; // 許容誤差
+            
+            // プレイヤーの足が障害物の上にあるか
+            return player.x + player.width > obsScreenX + tolerance &&
+                   player.x < obsScreenX + obs.width - tolerance &&
+                   Math.abs((player.y + player.height) - obs.y) < tolerance &&
+                   player.velocityY >= 0; // 落下中または着地時
+        }
+
         // 衝突判定
         function checkCollisions() {
             // 障害物との衝突
             for (let obs of obstacles) {
                 const obsScreenX = obs.x - cameraX;
-                if (player.x < obsScreenX + obs.width &&
-                    player.x + player.width > obsScreenX &&
-                    player.y < obs.y + obs.height &&
-                    player.y + player.height > obs.y) {
-                    return true;
+                
+                // 四角の障害物の場合、上から踏める
+                if (obs.type === 'box') {
+                    // 上から踏んでいる場合は衝突しない
+                    if (isOnObstacle(obs)) {
+                        continue;
+                    }
+                }
+                
+                // 三角の障害物または四角の障害物の側面・下からの衝突
+                if (obs.type === 'triangle') {
+                    // 三角の障害物は上から踏んでも死ぬ（どの方向からでも衝突）
+                    const topY = obs.y;
+                    const bottomY = obs.y + obs.height;
+                    const leftX = obsScreenX;
+                    const rightX = obsScreenX + obs.width;
+                    
+                    // プレイヤーが三角の範囲内にいるか
+                    if (player.x < rightX && player.x + player.width > leftX &&
+                        player.y < bottomY && player.y + player.height > topY) {
+                        // 三角の内部判定（簡易版：プレイヤーの中心点が三角の内部にあるか）
+                        const playerCenterX = player.x + player.width / 2;
+                        const playerCenterY = player.y + player.height / 2;
+                        
+                        // 三角の左側の線: y = topY + (bottomY - topY) * (x - leftX) / (width/2)
+                        // 三角の右側の線: y = topY + (bottomY - topY) * (rightX - x) / (width/2)
+                        const centerX = obsScreenX + obs.width / 2;
+                        const leftLineY = topY + (bottomY - topY) * (playerCenterX - leftX) / (obs.width / 2);
+                        const rightLineY = topY + (bottomY - topY) * (rightX - playerCenterX) / (obs.width / 2);
+                        const minY = Math.min(leftLineY, rightLineY);
+                        
+                        // プレイヤーの中心が三角の内部にあるか
+                        if (playerCenterY > minY && playerCenterY < bottomY) {
+                            return true;
+                        }
+                    }
+                } else {
+                    // 四角の障害物の側面・下からの衝突
+                    if (player.x < obsScreenX + obs.width &&
+                        player.x + player.width > obsScreenX &&
+                        player.y < obs.y + obs.height &&
+                        player.y + player.height > obs.y) {
+                        return true;
+                    }
                 }
             }
 
-            // 落とし穴との衝突
+            // 落とし穴との衝突（プレイヤーが落とし穴の上にいて、地面より下に落ちた場合）
             for (let pit of pits) {
                 const pitScreenX = pit.x - cameraX;
-                if (player.x + player.width / 2 > pitScreenX &&
-                    player.x + player.width / 2 < pitScreenX + pit.width &&
-                    player.y + player.height > pit.y) {
-                    return true;
+                // プレイヤーが落とし穴の範囲内にいる
+                if (player.x + player.width > pitScreenX &&
+                    player.x < pitScreenX + pit.width) {
+                    // プレイヤーが地面より下に落ちた場合
+                    if (player.y + player.height > pit.y) {
+                        return true;
+                    }
                 }
             }
 
@@ -475,8 +531,45 @@
             player.velocityY += gravity;
             player.y += player.velocityY;
 
-            // 地面との衝突
-            if (player.y >= player.groundY) {
+            // 最大ジャンプ高さの制限（画面からはみ出ないように）
+            const minY = player.groundY - maxJumpHeight;
+            if (player.y < minY) {
+                player.y = minY;
+                player.velocityY = 0;
+            }
+
+            // 落とし穴の上にいるかチェック
+            let onPit = false;
+            for (let pit of pits) {
+                const pitScreenX = pit.x - cameraX;
+                if (player.x + player.width > pitScreenX &&
+                    player.x < pitScreenX + pit.width) {
+                    onPit = true;
+                    break;
+                }
+            }
+
+            // 障害物の上に乗っているかチェック
+            let onObstacle = false;
+            let obstacleTop = player.groundY;
+            
+            for (let obs of obstacles) {
+                if (obs.type === 'box' && isOnObstacle(obs)) {
+                    const obsScreenX = obs.x - cameraX;
+                    obstacleTop = obs.y;
+                    onObstacle = true;
+                    // プレイヤーを障害物の上に配置
+                    if (player.y + player.height > obs.y && player.velocityY >= 0) {
+                        player.y = obs.y - player.height;
+                        player.velocityY = 0;
+                        player.isJumping = false;
+                    }
+                    break;
+                }
+            }
+
+            // 地面との衝突判定（落とし穴の上にいない場合のみ）
+            if (!onPit && !onObstacle && player.y >= player.groundY) {
                 player.y = player.groundY;
                 player.velocityY = 0;
                 player.isJumping = false;
@@ -535,17 +628,36 @@
             }
 
             // 障害物を描画
-            ctx.fillStyle = '#8B4513';
             for (let obs of obstacles) {
                 const obsScreenX = obs.x - cameraX;
                 if (obsScreenX > -obs.width && obsScreenX < canvas.width) {
-                    // 障害物の本体
-                    ctx.fillRect(obsScreenX, obs.y, obs.width, obs.height);
-                    
-                    // 障害物の影
-                    ctx.fillStyle = '#654321';
-                    ctx.fillRect(obsScreenX + 5, obs.y + obs.height, obs.width, 5);
-                    ctx.fillStyle = '#8B4513';
+                    if (obs.type === 'triangle') {
+                        // 三角の障害物を描画
+                        ctx.fillStyle = '#ff4444';
+                        ctx.beginPath();
+                        ctx.moveTo(obsScreenX + obs.width / 2, obs.y); // 頂点
+                        ctx.lineTo(obsScreenX, obs.y + obs.height); // 左下
+                        ctx.lineTo(obsScreenX + obs.width, obs.y + obs.height); // 右下
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // 三角の影
+                        ctx.fillStyle = '#cc0000';
+                        ctx.beginPath();
+                        ctx.moveTo(obsScreenX + obs.width / 2 + 3, obs.y + 3);
+                        ctx.lineTo(obsScreenX + 3, obs.y + obs.height + 3);
+                        ctx.lineTo(obsScreenX + obs.width + 3, obs.y + obs.height + 3);
+                        ctx.closePath();
+                        ctx.fill();
+                    } else {
+                        // 四角の障害物を描画
+                        ctx.fillStyle = '#8B4513';
+                        ctx.fillRect(obsScreenX, obs.y, obs.width, obs.height);
+                        
+                        // 障害物の影
+                        ctx.fillStyle = '#654321';
+                        ctx.fillRect(obsScreenX + 5, obs.y + obs.height, obs.width, 5);
+                    }
                 }
             }
 
