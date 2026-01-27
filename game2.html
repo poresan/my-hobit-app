@@ -22,10 +22,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             color: #ffffff;
             padding: 20px;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .game-container {
@@ -422,6 +423,54 @@
         let baseSpeed = 800; // 基本の光る間隔（ミリ秒）
         let minSpeed = 300; // 最小の光る間隔（ミリ秒）
 
+        // オーディオコンテキスト（効果音用）
+        let audioContext = null;
+        
+        // 各色の音の周波数
+        const soundFrequencies = {
+            red: 261.63,    // C4
+            blue: 329.63,   // E4
+            green: 392.00,  // G4
+            yellow: 523.25  // C5
+        };
+
+        // オーディオコンテキストを初期化
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // 効果音を再生
+        function playSound(color) {
+            if (!audioContext) {
+                initAudioContext();
+            }
+            
+            // オーディオコンテキストが一時停止している場合は再開
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            const frequency = soundFrequencies[color];
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+
+            // 音量のエンベロープ（フェードイン・フェードアウト）
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+            gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.2);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+
         // ハイスコアを読み込む
         function loadHighScore() {
             const saved = localStorage.getItem('simonHighScore');
@@ -486,7 +535,7 @@
             
             for (let i = 0; i < sequence.length; i++) {
                 await new Promise(resolve => setTimeout(resolve, speed));
-                activateButton(sequence[i]);
+                activateButton(sequence[i], true); // 効果音を再生
                 // 光る時間を少し長くして視認性を向上
                 await new Promise(resolve => setTimeout(resolve, speed + 100));
                 deactivateButton(sequence[i]);
@@ -504,9 +553,14 @@
         }
 
         // ボタンを光らせる
-        function activateButton(color) {
+        function activateButton(color, playSoundEffect = true) {
             const button = document.getElementById(color);
             button.classList.add('active');
+            
+            // 効果音を再生
+            if (playSoundEffect) {
+                playSound(color);
+            }
         }
 
         // ボタンの光を消す
@@ -532,7 +586,7 @@
             if (!canPlayerInput || isShowingSequence) return;
             
             // 視覚的フィードバック（より明るく、長く光らせる）
-            activateButton(color);
+            activateButton(color, true); // 効果音を再生
             setTimeout(() => {
                 deactivateButton(color);
             }, 200);
@@ -616,7 +670,22 @@
         // 初期化
         window.addEventListener('DOMContentLoaded', () => {
             updateHighScore();
+            // オーディオコンテキストを初期化（ユーザーインタラクション後に有効化される）
+            // 最初のクリック/タッチで初期化される
         });
+
+        // ユーザーインタラクションでオーディオコンテキストを初期化
+        document.addEventListener('click', () => {
+            if (!audioContext) {
+                initAudioContext();
+            }
+        }, { once: true });
+
+        document.addEventListener('touchstart', () => {
+            if (!audioContext) {
+                initAudioContext();
+            }
+        }, { once: true });
     </script>
 </body>
 </html>
