@@ -32,6 +32,7 @@
             width: 100%;
             max-width: 500px;
             text-align: center;
+            padding: 0 10px;
         }
 
         .back-link {
@@ -86,8 +87,10 @@
             grid-template-columns: 1fr 1fr;
             gap: 20px;
             max-width: 400px;
+            width: 100%;
             margin: 0 auto;
             aspect-ratio: 1;
+            min-height: 300px;
         }
 
         .simon-button {
@@ -98,6 +101,10 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            min-height: 150px;
+            min-width: 150px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .simon-button:active {
@@ -289,6 +296,42 @@
             transform: translateY(-2px);
         }
 
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .game-container {
+                max-width: 600px;
+            }
+
+            .game-board {
+                max-width: 500px;
+                width: 100%;
+                aspect-ratio: 1;
+                min-height: 400px;
+            }
+
+            .simon-button {
+                min-height: 200px;
+                min-width: 200px;
+            }
+        }
+
+        @media (min-width: 1025px) {
+            .game-container {
+                max-width: 700px;
+            }
+
+            .game-board {
+                max-width: 600px;
+                width: 100%;
+                aspect-ratio: 1;
+                min-height: 500px;
+            }
+
+            .simon-button {
+                min-height: 250px;
+                min-width: 250px;
+            }
+        }
+
         @media (max-width: 600px) {
             h1 {
                 font-size: 2em;
@@ -297,11 +340,14 @@
             .game-board {
                 gap: 15px;
                 max-width: 100%;
+                min-height: 250px;
             }
 
             .simon-button {
                 border-radius: 15px;
                 border-width: 3px;
+                min-height: 100px;
+                min-width: 100px;
             }
 
             .stats {
@@ -316,6 +362,12 @@
         @media (max-width: 400px) {
             .game-board {
                 gap: 10px;
+                min-height: 200px;
+            }
+
+            .simon-button {
+                min-height: 80px;
+                min-width: 80px;
             }
         }
     </style>
