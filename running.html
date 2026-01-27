@@ -231,71 +231,44 @@
             box-shadow: 0 5px 15px rgba(255, 255, 255, 0.4);
         }
 
-        .start-screen-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        }
-
-        .start-screen-modal.hidden {
-            display: none;
-        }
-
-        .start-screen-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 50px;
-            border-radius: 20px;
-            text-align: center;
-            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
-            max-width: 90%;
-            width: 500px;
-            color: white;
-        }
-
-        .start-screen-content h2 {
-            font-size: 2.5em;
+        .start-section {
             margin-bottom: 20px;
-        }
-
-        .start-screen-content p {
-            font-size: 1.2em;
-            margin-bottom: 30px;
-            opacity: 0.9;
+            text-align: center;
         }
 
         .start-btn {
-            padding: 20px 60px;
-            background: white;
-            color: #667eea;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
             border: none;
             border-radius: 30px;
-            font-size: 1.5em;
+            font-size: 1.3em;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
         }
 
         .start-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5);
         }
 
         .start-btn:active {
-            transform: translateY(-1px);
+            transform: translateY(0);
+        }
+
+        .start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .last-update {
-            margin-top: 30px;
-            font-size: 0.9em;
-            opacity: 0.8;
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         @media (max-width: 600px) {
@@ -318,6 +291,11 @@
         <a href="index.html" class="back-link">← 玄関に戻る</a>
         <h1>🏃 ランニングゲーム</h1>
         
+        <div class="start-section">
+            <button class="start-btn" id="startBtn">ゲーム開始</button>
+            <div class="last-update" id="lastUpdate"></div>
+        </div>
+
         <div class="game-info">
             <div class="info-item">
                 <div class="info-label">ステージ</div>
@@ -350,15 +328,6 @@
             <h2>🎉 ステージクリア！</h2>
             <p id="stageClearMessage">ステージ1をクリアしました！</p>
             <button class="next-stage-btn" onclick="nextStage()">次のステージへ</button>
-        </div>
-    </div>
-
-    <div class="start-screen-modal" id="startScreenModal">
-        <div class="start-screen-content">
-            <h2>🏃 ランニングゲーム</h2>
-            <p>ジャンプで障害物を避けてゴールを目指そう！</p>
-            <button class="start-btn" onclick="hideStartScreen()">ゲーム開始</button>
-            <div class="last-update" id="lastUpdate"></div>
         </div>
     </div>
 
@@ -465,7 +434,7 @@
         ];
 
         // 物理定数
-        const gravity = 0.28; // よりフワッと浮遊感を出すために下げる
+        const gravity = 0.2; // よりフワッと浮遊感を出すために下げる
         const jumpPower = -16;
         const groundFriction = 0.9;
         const maxJumpHeight = 220; // 最大ジャンプ高さ（画面からはみ出ないように）
@@ -537,15 +506,28 @@
                     // 自キャラの右下が1ピクセルでも障害物の上に乗っていれば衝突しない
                     const playerRight = player.x + player.width;
                     const playerBottom = player.y + player.height;
+                    const playerLeft = player.x;
+                    const playerTop = player.y;
                     
-                    // 右下が障害物の上に乗っているかチェック
+                    // 右下が障害物の上に乗っているかチェック（より寛容に）
                     const isRightBottomOnTop = playerRight >= obsScreenX && 
                                               playerRight <= obsScreenX + obs.width &&
-                                              playerBottom >= obs.y - 1 && 
-                                              playerBottom <= obs.y + 5;
+                                              playerBottom >= obs.y - 2 && 
+                                              playerBottom <= obs.y + 8;
                     
-                    // または、isOnObstacle関数で判定
-                    if (isOnObstacle(obs) || isRightBottomOnTop) {
+                    // プレイヤーの右端が障害物の範囲内にあるか
+                    const isRightInRange = playerRight > obsScreenX && playerRight < obsScreenX + obs.width;
+                    // プレイヤーの左端が障害物の範囲内にあるか
+                    const isLeftInRange = playerLeft > obsScreenX && playerLeft < obsScreenX + obs.width;
+                    // プレイヤーが障害物の範囲内にいるか
+                    const isInXRange = isRightInRange || isLeftInRange || 
+                                      (playerLeft <= obsScreenX && playerRight >= obsScreenX + obs.width);
+                    
+                    // プレイヤーの足が障害物の上にあるか
+                    const isOnTop = playerBottom >= obs.y - 2 && playerBottom <= obs.y + 8;
+                    
+                    // 上から踏んでいる場合は完全にスキップ
+                    if (isOnObstacle(obs) || (isInXRange && isOnTop)) {
                         continue; // 衝突しない
                     }
                     
@@ -556,17 +538,19 @@
                     const obsBottomY = obs.y + obs.height;
                     
                     // 側面からの衝突（左右）- ただし、上に乗っている場合は除外
-                    const isOnLeftSide = player.x + player.width > obsScreenX && 
-                                        player.x + player.width < obsScreenX + 15 &&
+                    // 左側からの衝突
+                    const isOnLeftSide = playerRight > obsScreenX && 
+                                        playerRight < obsScreenX + 20 &&
                                         playerTopY < obsBottomY && 
                                         playerBottomY > obsTopY &&
-                                        !isRightBottomOnTop;
+                                        !(isInXRange && isOnTop);
                     
-                    const isOnRightSide = player.x < obsScreenX + obs.width && 
-                                         player.x > obsScreenX + obs.width - 15 &&
+                    // 右側からの衝突
+                    const isOnRightSide = playerLeft < obsScreenX + obs.width && 
+                                         playerLeft > obsScreenX + obs.width - 20 &&
                                          playerTopY < obsBottomY && 
                                          playerBottomY > obsTopY &&
-                                         !isRightBottomOnTop;
+                                         !(isInXRange && isOnTop);
                     
                     if (isOnLeftSide || isOnRightSide) {
                         return true;
@@ -576,9 +560,9 @@
                     // ただし、障害物の上に乗っている場合は除外
                     if (playerBottomY > obsTopY && 
                         playerTopY < obsTopY &&
-                        player.x + player.width > obsScreenX + 5 &&
-                        player.x < obsScreenX + obs.width - 5 &&
-                        !isRightBottomOnTop) {
+                        playerRight > obsScreenX + 5 &&
+                        playerLeft < obsScreenX + obs.width - 5 &&
+                        !(isInXRange && isOnTop)) {
                         return true;
                     }
                 } else if (obs.type === 'triangle') {
@@ -887,8 +871,11 @@
             currentStage = 1;
             document.getElementById('gameOverModal').classList.remove('show');
             document.getElementById('stageClearModal').classList.remove('show');
+            const startBtn = document.getElementById('startBtn');
+            startBtn.disabled = false;
+            startBtn.textContent = 'ゲーム開始';
             loadStage(currentStage);
-            startGame();
+            // ゲームは自動開始しない
         }
 
         // ゲーム開始
@@ -898,9 +885,13 @@
             gameLoop();
         }
 
-        // スタート画面を非表示にする
-        function hideStartScreen() {
-            document.getElementById('startScreenModal').classList.add('hidden');
+        // スタートボタンの処理
+        function handleStart() {
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn.disabled) return;
+            
+            startBtn.disabled = true;
+            startBtn.textContent = 'ゲーム中...';
             loadStage(1);
             startGame();
         }
@@ -918,11 +909,13 @@
         }
 
         // イベントリスナー
+        document.getElementById('startBtn').addEventListener('click', handleStart);
+        
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                 e.preventDefault();
-                if (!document.getElementById('startScreenModal').classList.contains('hidden')) {
-                    hideStartScreen();
+                if (!gameRunning) {
+                    handleStart();
                 } else {
                     jump();
                 }
