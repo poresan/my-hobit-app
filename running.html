@@ -435,7 +435,7 @@
 
         // 物理定数
         const gravity = 0.2; // よりフワッと浮遊感を出すために下げる
-        const jumpPower = -13; // 飛び上がりのスピードをゆっくりに
+        const jumpPower = -11; // 飛び上がりのスピードをさらにゆっくりに
         const groundFriction = 0.9;
         const maxJumpHeight = 220; // 最大ジャンプ高さ（画面からはみ出ないように）
 
@@ -542,26 +542,28 @@
         }
 
         // プレイヤーが障害物の上にいるかチェック
-        // 自キャラの右下（player.x + player.width, player.y + player.height）が
-        // 1ピクセルでも障害物の上に乗っていればtrue
+        // 自キャラの下の部分（足の部分）のどこでも障害物の上に乗っていればtrue
         function isOnObstacle(obs) {
             const obsScreenX = obs.x - cameraX;
             
-            // プレイヤーの右下の座標
+            // プレイヤーの座標
+            const playerLeft = player.x;
             const playerRight = player.x + player.width;
             const playerBottom = player.y + player.height;
+            const playerTop = player.y;
             
-            // 右下が障害物の上に乗っているか（1ピクセルでも）
+            // プレイヤーが障害物のX範囲内にいるか（少しでも重なっていればOK）
+            const isInXRange = playerRight > obsScreenX + 2 && 
+                              playerLeft < obsScreenX + obs.width - 2;
+            
+            // プレイヤーの足が障害物の上端に触れているか（より寛容に）
             // 障害物の上端（obs.y）にプレイヤーの足が触れているか
-            const isOnTop = playerBottom >= obs.y - 1 && playerBottom <= obs.y + 5;
+            const isOnTop = playerBottom >= obs.y - 3 && playerBottom <= obs.y + 10;
             
-            // 右下のX座標が障害物の範囲内にあるか
-            const isInXRange = playerRight > obsScreenX && playerRight < obsScreenX + obs.width;
+            // プレイヤーが障害物の上にいる（落下中または着地時）
+            const isFallingOrLanded = player.velocityY >= -1;
             
-            // または、プレイヤーの右端が障害物の左端を超えている場合も考慮
-            const isTouching = playerRight >= obsScreenX && player.x < obsScreenX + obs.width;
-            
-            return isTouching && isOnTop;
+            return isInXRange && isOnTop && isFallingOrLanded;
         }
 
         // 衝突判定
@@ -572,54 +574,33 @@
                 
                 // 四角の障害物の場合
                 if (obs.type === 'box') {
-                    // 自キャラの右下が1ピクセルでも障害物の上に乗っていれば衝突しない
-                    const playerRight = player.x + player.width;
-                    const playerBottom = player.y + player.height;
-                    const playerLeft = player.x;
-                    const playerTop = player.y;
-                    
-                    // 右下が障害物の上に乗っているかチェック（より寛容に）
-                    const isRightBottomOnTop = playerRight >= obsScreenX && 
-                                              playerRight <= obsScreenX + obs.width &&
-                                              playerBottom >= obs.y - 2 && 
-                                              playerBottom <= obs.y + 8;
-                    
-                    // プレイヤーの右端が障害物の範囲内にあるか
-                    const isRightInRange = playerRight > obsScreenX && playerRight < obsScreenX + obs.width;
-                    // プレイヤーの左端が障害物の範囲内にあるか
-                    const isLeftInRange = playerLeft > obsScreenX && playerLeft < obsScreenX + obs.width;
-                    // プレイヤーが障害物の範囲内にいるか
-                    const isInXRange = isRightInRange || isLeftInRange || 
-                                      (playerLeft <= obsScreenX && playerRight >= obsScreenX + obs.width);
-                    
-                    // プレイヤーの足が障害物の上にあるか
-                    const isOnTop = playerBottom >= obs.y - 2 && playerBottom <= obs.y + 8;
-                    
-                    // 上から踏んでいる場合は完全にスキップ
-                    if (isOnObstacle(obs) || (isInXRange && isOnTop)) {
+                    // 上から踏んでいる場合は完全にスキップ（isOnObstacle関数で判定）
+                    if (isOnObstacle(obs)) {
                         continue; // 衝突しない
                     }
                     
                     // 四角の障害物の側面・下からの衝突のみ判定
                     const playerBottomY = player.y + player.height;
                     const playerTopY = player.y;
+                    const playerLeft = player.x;
+                    const playerRight = player.x + player.width;
                     const obsTopY = obs.y;
                     const obsBottomY = obs.y + obs.height;
+                    const obsLeft = obsScreenX;
+                    const obsRight = obsScreenX + obs.width;
                     
                     // 側面からの衝突（左右）- ただし、上に乗っている場合は除外
                     // 左側からの衝突
-                    const isOnLeftSide = playerRight > obsScreenX && 
-                                        playerRight < obsScreenX + 20 &&
+                    const isOnLeftSide = playerRight > obsLeft && 
+                                        playerRight < obsLeft + 20 &&
                                         playerTopY < obsBottomY && 
-                                        playerBottomY > obsTopY &&
-                                        !(isInXRange && isOnTop);
+                                        playerBottomY > obsTopY;
                     
                     // 右側からの衝突
-                    const isOnRightSide = playerLeft < obsScreenX + obs.width && 
-                                         playerLeft > obsScreenX + obs.width - 20 &&
+                    const isOnRightSide = playerLeft < obsRight && 
+                                         playerLeft > obsRight - 20 &&
                                          playerTopY < obsBottomY && 
-                                         playerBottomY > obsTopY &&
-                                         !(isInXRange && isOnTop);
+                                         playerBottomY > obsTopY;
                     
                     if (isOnLeftSide || isOnRightSide) {
                         return true;
@@ -629,9 +610,8 @@
                     // ただし、障害物の上に乗っている場合は除外
                     if (playerBottomY > obsTopY && 
                         playerTopY < obsTopY &&
-                        playerRight > obsScreenX + 5 &&
-                        playerLeft < obsScreenX + obs.width - 5 &&
-                        !(isInXRange && isOnTop)) {
+                        playerRight > obsLeft + 5 &&
+                        playerLeft < obsRight - 5) {
                         return true;
                     }
                 } else if (obs.type === 'triangle') {
@@ -664,19 +644,36 @@
             }
 
             // 落とし穴との衝突（プレイヤーが落とし穴の上にいて、地面より下に落ちた場合）
-            // 自キャラが少しでも地面に接していれば死なない
+            // 自キャラの下の部分のどこでも地面に面していたら死なない
             for (let pit of pits) {
                 const pitScreenX = pit.x - cameraX;
                 // プレイヤーが落とし穴の範囲内にいる
                 if (player.x + player.width > pitScreenX &&
                     player.x < pitScreenX + pit.width) {
-                    // プレイヤーの足（player.y + player.height）が地面（pit.y）より下に落ちた場合
-                    // 自キャラが少しでも地面に接していれば死なない（より寛容に）
+                    // プレイヤーの足の部分（下の部分）をチェック
                     const playerBottom = player.y + player.height;
+                    const playerLeft = player.x;
+                    const playerRight = player.x + player.width;
                     const groundLevel = pit.y;
                     
-                    // 完全に地面より下に落ちた場合のみ死ぬ（5ピクセルの余裕を持たせる）
-                    if (playerBottom > groundLevel + 5) {
+                    // プレイヤーの下の部分のどこかが地面に接しているかチェック
+                    // プレイヤーの足の部分（下の10ピクセル）をチェック
+                    const checkPoints = 5; // チェックポイント数
+                    let isTouchingGround = false;
+                    
+                    for (let i = 0; i <= checkPoints; i++) {
+                        const checkX = playerLeft + (playerRight - playerLeft) * (i / checkPoints);
+                        const checkY = playerBottom;
+                        
+                        // このポイントが地面に接しているか（10ピクセルの余裕）
+                        if (checkY <= groundLevel + 10) {
+                            isTouchingGround = true;
+                            break;
+                        }
+                    }
+                    
+                    // 完全に地面より下に落ちた場合のみ死ぬ
+                    if (!isTouchingGround && playerBottom > groundLevel + 10) {
                         return true;
                     }
                 }
@@ -732,29 +729,16 @@
             let obstacleTop = player.groundY;
             
             for (let obs of obstacles) {
-                if (obs.type === 'box') {
-                    const obsScreenX = obs.x - cameraX;
-                    const playerRight = player.x + player.width;
-                    const playerBottom = player.y + player.height;
-                    
-                    // 右下が障害物の上に乗っているかチェック（1ピクセルでも）
-                    const isRightBottomOnTop = playerRight >= obsScreenX && 
-                                              playerRight <= obsScreenX + obs.width &&
-                                              playerBottom >= obs.y - 1 && 
-                                              playerBottom <= obs.y + 5;
-                    
-                    // または、isOnObstacle関数で判定
-                    if (isOnObstacle(obs) || isRightBottomOnTop) {
-                        obstacleTop = obs.y;
-                        onObstacle = true;
-                        // プレイヤーを障害物の上に配置
-                        if (player.y + player.height > obs.y && player.velocityY >= 0) {
-                            player.y = obs.y - player.height;
-                            player.velocityY = 0;
-                            player.isJumping = false;
-                        }
-                        break;
+                if (obs.type === 'box' && isOnObstacle(obs)) {
+                    obstacleTop = obs.y;
+                    onObstacle = true;
+                    // プレイヤーを障害物の上に配置
+                    if (player.y + player.height > obs.y && player.velocityY >= 0) {
+                        player.y = obs.y - player.height;
+                        player.velocityY = 0;
+                        player.isJumping = false;
                     }
+                    break;
                 }
             }
 
@@ -984,6 +968,15 @@
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                 e.preventDefault();
+                
+                // ゲームオーバーモーダルが表示されている場合はリスタート
+                const gameOverModal = document.getElementById('gameOverModal');
+                if (gameOverModal.classList.contains('show')) {
+                    restartStage();
+                    return;
+                }
+                
+                // ゲームが実行中でない場合はスタート
                 if (!gameRunning) {
                     handleStart();
                 } else {
