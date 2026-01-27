@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="自動で走るキャラクターをジャンプで操作するゲーム">
+    <meta name="theme-color" content="#4a90e2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>ランニングゲーム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.2s;
+            font-size: 1em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .back-link:hover {
+            opacity: 0.7;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            color: white;
+            font-size: 1.2em;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .info-label {
+            font-size: 0.7em;
+            opacity: 0.9;
+        }
+
+        .info-value {
+            font-size: 1.3em;
+        }
+
+        #gameCanvas {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            background: linear-gradient(to bottom, #87CEEB 0%, #98D8C8 100%);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            display: block;
+            width: 100%;
+            max-width: 800px;
+            height: 400px;
+            margin: 0 auto;
+        }
+
+        .controls {
+            margin-top: 20px;
+            color: white;
+            font-size: 1em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .jump-btn {
+            margin-top: 15px;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            touch-action: manipulation;
+        }
+
+        .jump-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+        }
+
+        .game-over-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .game-over-modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            max-width: 90%;
+            width: 400px;
+        }
+
+        .modal-content h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-content p {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .restart-btn {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .stage-clear-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .stage-clear-modal.show {
+            display: flex;
+        }
+
+        .stage-clear-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            max-width: 90%;
+            width: 400px;
+            color: white;
+        }
+
+        .stage-clear-content h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        .stage-clear-content p {
+            font-size: 1.3em;
+            margin-bottom: 30px;
+        }
+
+        .next-stage-btn {
+            padding: 15px 40px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .next-stage-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.4);
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .game-info {
+                font-size: 1em;
+            }
+
+            #gameCanvas {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <a href="index.html" class="back-link">← 玄関に戻る</a>
+        <h1>🏃 ランニングゲーム</h1>
+        
+        <div class="game-info">
+            <div class="info-item">
+                <div class="info-label">ステージ</div>
+                <div class="info-value" id="stageDisplay">1</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">残り距離</div>
+                <div class="info-value" id="distanceDisplay">0</div>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="controls">
+            <p>スペースキーまたはボタンでジャンプ</p>
+            <button class="jump-btn" id="jumpBtn">ジャンプ！</button>
+        </div>
+    </div>
+
+    <div class="game-over-modal" id="gameOverModal">
+        <div class="modal-content">
+            <h2>ゲームオーバー</h2>
+            <p>障害物に当たってしまいました</p>
+            <button class="restart-btn" onclick="restartStage()">もう一度挑戦</button>
+        </div>
+    </div>
+
+    <div class="stage-clear-modal" id="stageClearModal">
+        <div class="stage-clear-content">
+            <h2>🎉 ステージクリア！</h2>
+            <p id="stageClearMessage">ステージ1をクリアしました！</p>
+            <button class="next-stage-btn" onclick="nextStage()">次のステージへ</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // キャンバスのサイズを設定
+        function resizeCanvas() {
+            const maxWidth = 800;
+            const maxHeight = 400;
+            const aspectRatio = maxWidth / maxHeight;
+            
+            let width = Math.min(window.innerWidth - 40, maxWidth);
+            let height = width / aspectRatio;
+            
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = height * aspectRatio;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // ゲーム状態
+        let currentStage = 1;
+        let gameRunning = false;
+        let gamePaused = false;
+
+        // キャラクター
+        const player = {
+            x: 100,
+            y: 0,
+            width: 40,
+            height: 50,
+            velocityY: 0,
+            isJumping: false,
+            groundY: 0,
+            color: '#ff6b6b'
+        };
+
+        // 地面の高さ
+        const groundHeight = 50;
+        player.groundY = canvas.height - groundHeight - player.height;
+        player.y = player.groundY;
+
+        // カメラ（スクロール位置）
+        let cameraX = 0;
+        const scrollSpeed = 3;
+
+        // 障害物と落とし穴
+        let obstacles = [];
+        let pits = [];
+        let goalX = 0;
+
+        // ステージデータ
+        const stages = [
+            {
+                obstacles: [
+                    { x: 500, width: 60, height: 80 },
+                    { x: 800, width: 60, height: 100 },
+                    { x: 1200, width: 60, height: 60 }
+                ],
+                pits: [
+                    { x: 650, width: 100 },
+                    { x: 950, width: 80 }
+                ],
+                goal: 1500
+            },
+            {
+                obstacles: [
+                    { x: 400, width: 60, height: 90 },
+                    { x: 700, width: 60, height: 110 },
+                    { x: 1000, width: 60, height: 70 },
+                    { x: 1300, width: 60, height: 100 }
+                ],
+                pits: [
+                    { x: 550, width: 120 },
+                    { x: 850, width: 100 },
+                    { x: 1150, width: 90 }
+                ],
+                goal: 1600
+            },
+            {
+                obstacles: [
+                    { x: 350, width: 60, height: 100 },
+                    { x: 600, width: 60, height: 120 },
+                    { x: 850, width: 60, height: 80 },
+                    { x: 1100, width: 60, height: 110 },
+                    { x: 1350, width: 60, height: 95 }
+                ],
+                pits: [
+                    { x: 500, width: 80 },
+                    { x: 750, width: 100 },
+                    { x: 1000, width: 90 },
+                    { x: 1250, width: 110 }
+                ],
+                goal: 1700
+            }
+        ];
+
+        // 物理定数
+        const gravity = 0.8;
+        const jumpPower = -15;
+        const groundFriction = 0.9;
+
+        // ステージを読み込む
+        function loadStage(stageNumber) {
+            const stage = stages[stageNumber - 1];
+            obstacles = stage.obstacles.map(obs => ({
+                ...obs,
+                y: canvas.height - groundHeight - obs.height
+            }));
+            pits = stage.pits.map(pit => ({
+                ...pit,
+                y: canvas.height - groundHeight,
+                depth: 200
+            }));
+            goalX = stage.goal;
+            
+            // プレイヤーをリセット
+            player.x = 100;
+            player.y = player.groundY;
+            player.velocityY = 0;
+            player.isJumping = false;
+            cameraX = 0;
+            
+            updateDisplay();
+        }
+
+        // ジャンプ
+        function jump() {
+            if (!player.isJumping && gameRunning && !gamePaused) {
+                player.velocityY = jumpPower;
+                player.isJumping = true;
+            }
+        }
+
+        // 衝突判定
+        function checkCollisions() {
+            // 障害物との衝突
+            for (let obs of obstacles) {
+                const obsScreenX = obs.x - cameraX;
+                if (player.x < obsScreenX + obs.width &&
+                    player.x + player.width > obsScreenX &&
+                    player.y < obs.y + obs.height &&
+                    player.y + player.height > obs.y) {
+                    return true;
+                }
+            }
+
+            // 落とし穴との衝突
+            for (let pit of pits) {
+                const pitScreenX = pit.x - cameraX;
+                if (player.x + player.width / 2 > pitScreenX &&
+                    player.x + player.width / 2 < pitScreenX + pit.width &&
+                    player.y + player.height > pit.y) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // ゴール判定
+        function checkGoal() {
+            const goalScreenX = goalX - cameraX;
+            return player.x >= goalScreenX - 50;
+        }
+
+        // 更新表示
+        function updateDisplay() {
+            document.getElementById('stageDisplay').textContent = currentStage;
+            const remainingDistance = Math.max(0, Math.floor((goalX - cameraX - player.x) / 10));
+            document.getElementById('distanceDisplay').textContent = remainingDistance;
+        }
+
+        // ゲームループ
+        function gameLoop() {
+            if (!gameRunning || gamePaused) return;
+
+            // カメラをスクロール
+            cameraX += scrollSpeed;
+
+            // プレイヤーの物理
+            player.velocityY += gravity;
+            player.y += player.velocityY;
+
+            // 地面との衝突
+            if (player.y >= player.groundY) {
+                player.y = player.groundY;
+                player.velocityY = 0;
+                player.isJumping = false;
+            }
+
+            // 衝突判定
+            if (checkCollisions()) {
+                gameOver();
+                return;
+            }
+
+            // ゴール判定
+            if (checkGoal()) {
+                stageClear();
+                return;
+            }
+
+            // 描画
+            draw();
+
+            // 表示更新
+            updateDisplay();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 描画
+        function draw() {
+            // 背景をクリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 背景（空）
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(1, '#98D8C8');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 地面
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+            
+            // 地面のテクスチャ
+            ctx.fillStyle = '#654321';
+            for (let i = 0; i < canvas.width; i += 20) {
+                ctx.fillRect(i - (cameraX % 20), canvas.height - groundHeight, 1, groundHeight);
+            }
+
+            // 落とし穴を描画
+            ctx.fillStyle = '#000000';
+            for (let pit of pits) {
+                const pitScreenX = pit.x - cameraX;
+                if (pitScreenX > -pit.width && pitScreenX < canvas.width) {
+                    ctx.fillRect(pitScreenX, pit.y, pit.width, pit.depth);
+                }
+            }
+
+            // 障害物を描画
+            ctx.fillStyle = '#8B4513';
+            for (let obs of obstacles) {
+                const obsScreenX = obs.x - cameraX;
+                if (obsScreenX > -obs.width && obsScreenX < canvas.width) {
+                    // 障害物の本体
+                    ctx.fillRect(obsScreenX, obs.y, obs.width, obs.height);
+                    
+                    // 障害物の影
+                    ctx.fillStyle = '#654321';
+                    ctx.fillRect(obsScreenX + 5, obs.y + obs.height, obs.width, 5);
+                    ctx.fillStyle = '#8B4513';
+                }
+            }
+
+            // ゴールを描画
+            const goalScreenX = goalX - cameraX;
+            if (goalScreenX > -100 && goalScreenX < canvas.width + 100) {
+                // ゴールフラッグ
+                ctx.fillStyle = '#00ff00';
+                ctx.fillRect(goalScreenX - 5, canvas.height - groundHeight - 150, 10, 150);
+                ctx.fillStyle = '#ffff00';
+                ctx.beginPath();
+                ctx.moveTo(goalScreenX - 5, canvas.height - groundHeight - 150);
+                ctx.lineTo(goalScreenX - 5, canvas.height - groundHeight - 100);
+                ctx.lineTo(goalScreenX + 30, canvas.height - groundHeight - 125);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // プレイヤーを描画
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            
+            // プレイヤーの目
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(player.x + 10, player.y + 15, 8, 8);
+            ctx.fillRect(player.x + 22, player.y + 15, 8, 8);
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(player.x + 12, player.y + 17, 4, 4);
+            ctx.fillRect(player.x + 24, player.y + 17, 4, 4);
+
+            // 雲を描画（装飾）
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            for (let i = 0; i < 3; i++) {
+                const cloudX = (i * 400 - (cameraX * 0.3) % 1200) % canvas.width;
+                ctx.beginPath();
+                ctx.arc(cloudX, 50, 20, 0, Math.PI * 2);
+                ctx.arc(cloudX + 25, 50, 25, 0, Math.PI * 2);
+                ctx.arc(cloudX + 50, 50, 20, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // ゲームオーバー
+        function gameOver() {
+            gameRunning = false;
+            gamePaused = true;
+            document.getElementById('gameOverModal').classList.add('show');
+        }
+
+        // ステージクリア
+        function stageClear() {
+            gameRunning = false;
+            gamePaused = true;
+            
+            if (currentStage < 3) {
+                document.getElementById('stageClearMessage').textContent = 
+                    `ステージ${currentStage}をクリアしました！`;
+                document.getElementById('stageClearModal').classList.add('show');
+            } else {
+                // 全ステージクリア
+                document.getElementById('stageClearMessage').textContent = 
+                    '全ステージクリア！おめでとうございます！';
+                document.getElementById('stageClearModal').classList.add('show');
+            }
+        }
+
+        // 次のステージへ
+        function nextStage() {
+            if (currentStage < 3) {
+                currentStage++;
+                document.getElementById('stageClearModal').classList.remove('show');
+                loadStage(currentStage);
+                startGame();
+            } else {
+                // ゲームクリア
+                document.getElementById('stageClearModal').classList.remove('show');
+                restartGame();
+            }
+        }
+
+        // ステージを再スタート
+        function restartStage() {
+            document.getElementById('gameOverModal').classList.remove('show');
+            loadStage(currentStage);
+            startGame();
+        }
+
+        // ゲームを再開
+        function restartGame() {
+            currentStage = 1;
+            document.getElementById('gameOverModal').classList.remove('show');
+            document.getElementById('stageClearModal').classList.remove('show');
+            loadStage(currentStage);
+            startGame();
+        }
+
+        // ゲーム開始
+        function startGame() {
+            gameRunning = true;
+            gamePaused = false;
+            gameLoop();
+        }
+
+        // イベントリスナー
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+        });
+
+        document.getElementById('jumpBtn').addEventListener('click', jump);
+        document.getElementById('jumpBtn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        });
+
+        // 初期化
+        loadStage(1);
+        startGame();
+    </script>
+</body>
+</html>

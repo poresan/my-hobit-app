@@ -297,6 +297,32 @@
             transform: translateY(-2px);
         }
 
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .quit-btn {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #666 0%, #444 100%);
+            color: #fff;
+            border: 2px solid #777;
+            border-radius: 30px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quit-btn:hover {
+            background: linear-gradient(135deg, #777 0%, #555 100%);
+            border-color: #999;
+            transform: translateY(-2px);
+        }
+
         @media (min-width: 768px) and (max-width: 1024px) {
             .game-container {
                 max-width: 600px;
@@ -408,7 +434,10 @@
             <h2>ゲームオーバー</h2>
             <p>レベル <span id="finalLevel">0</span> まで到達しました</p>
             <div class="score" id="finalScore">0</div>
-            <button class="restart-btn" onclick="restartGame()">もう一度遊ぶ</button>
+            <div class="button-group">
+                <button class="restart-btn" onclick="restartGame()">もう一度遊ぶ</button>
+                <button class="quit-btn" onclick="quitGame()">やめる</button>
+            </div>
         </div>
     </div>
 
@@ -420,8 +449,8 @@
         let isPlaying = false;
         let isShowingSequence = false;
         let canPlayerInput = false;
-        let baseSpeed = 800; // 基本の光る間隔（ミリ秒）
-        let minSpeed = 300; // 最小の光る間隔（ミリ秒）
+        let baseSpeed = 600; // 基本の光る間隔（ミリ秒）
+        let minSpeed = 250; // 最小の光る間隔（ミリ秒）
 
         // オーディオコンテキスト（効果音用）
         let audioContext = null;
@@ -536,8 +565,8 @@
             for (let i = 0; i < sequence.length; i++) {
                 await new Promise(resolve => setTimeout(resolve, speed));
                 activateButton(sequence[i], true); // 効果音を再生
-                // 光る時間を少し長くして視認性を向上
-                await new Promise(resolve => setTimeout(resolve, speed + 100));
+                // 光る時間を少し短くしてスピードアップ
+                await new Promise(resolve => setTimeout(resolve, speed * 0.7));
                 deactivateButton(sequence[i]);
             }
             
@@ -651,6 +680,24 @@
         function restartGame() {
             document.getElementById('gameOverModal').classList.remove('show');
             startGame();
+        }
+
+        // ゲームを終了
+        function quitGame() {
+            isPlaying = false;
+            canPlayerInput = false;
+            isShowingSequence = false;
+            setButtonsEnabled(false);
+            
+            document.getElementById('gameOverModal').classList.remove('show');
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('message').textContent = '';
+            
+            // ゲーム状態をリセット
+            sequence = [];
+            playerSequence = [];
+            level = 0;
+            document.getElementById('level').textContent = '0';
         }
 
         // ボタンにイベントリスナーを追加
