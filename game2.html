@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="大人が本気で遊ぶスタイリッシュなサイモンゲーム">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>サイモンゲーム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #000000;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #888;
+            font-weight: 300;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+            aspect-ratio: 1;
+        }
+
+        .simon-button {
+            border-radius: 20px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .simon-button:active {
+            transform: scale(0.98);
+        }
+
+        .simon-button.red {
+            background: #8b1a1a;
+        }
+
+        .simon-button.red.active {
+            background: #ff4444;
+            box-shadow: 0 0 40px rgba(255, 68, 68, 0.8), inset 0 0 30px rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 68, 68, 0.8);
+        }
+
+        .simon-button.blue {
+            background: #1a3a5c;
+        }
+
+        .simon-button.blue.active {
+            background: #4488ff;
+            box-shadow: 0 0 40px rgba(68, 136, 255, 0.8), inset 0 0 30px rgba(255, 255, 255, 0.3);
+            border-color: rgba(68, 136, 255, 0.8);
+        }
+
+        .simon-button.green {
+            background: #1a5c2a;
+        }
+
+        .simon-button.green.active {
+            background: #44ff88;
+            box-shadow: 0 0 40px rgba(68, 255, 136, 0.8), inset 0 0 30px rgba(255, 255, 255, 0.3);
+            border-color: rgba(68, 255, 136, 0.8);
+        }
+
+        .simon-button.yellow {
+            background: #5c4a1a;
+        }
+
+        .simon-button.yellow.active {
+            background: #ffdd44;
+            box-shadow: 0 0 40px rgba(255, 221, 68, 0.8), inset 0 0 30px rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 221, 68, 0.8);
+        }
+
+        .simon-button.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .control-panel {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .start-btn {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #333 0%, #111 100%);
+            color: #fff;
+            border: 2px solid #555;
+            border-radius: 30px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.1em;
+            min-width: 200px;
+        }
+
+        .start-btn:hover {
+            background: linear-gradient(135deg, #444 0%, #222 100%);
+            border-color: #777;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .start-btn:active {
+            transform: translateY(0);
+        }
+
+        .start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            font-size: 1.3em;
+            margin-top: 20px;
+            min-height: 40px;
+            color: #fff;
+            font-weight: 300;
+        }
+
+        .message.error {
+            color: #ff4444;
+            animation: shake 0.5s ease;
+        }
+
+        .message.success {
+            color: #44ff88;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .game-over-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .game-over-modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #111;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid #333;
+            max-width: 90%;
+            width: 400px;
+        }
+
+        .modal-content h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #ff4444;
+        }
+
+        .modal-content p {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .modal-content .score {
+            font-size: 2.5em;
+            font-weight: 600;
+            color: #44ff88;
+            margin: 20px 0;
+        }
+
+        .restart-btn {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #333 0%, #111 100%);
+            color: #fff;
+            border: 2px solid #555;
+            border-radius: 30px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .restart-btn:hover {
+            background: linear-gradient(135deg, #444 0%, #222 100%);
+            border-color: #777;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .game-board {
+                gap: 15px;
+                max-width: 100%;
+            }
+
+            .simon-button {
+                border-radius: 15px;
+                border-width: 3px;
+            }
+
+            .stats {
+                font-size: 0.95em;
+            }
+
+            .stat-value {
+                font-size: 1.3em;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .game-board {
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>SIMON</h1>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label">レベル</div>
+                <div class="stat-value" id="level">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">ハイスコア</div>
+                <div class="stat-value" id="highScore">0</div>
+            </div>
+        </div>
+
+        <div class="game-board">
+            <div class="simon-button red" data-color="red" id="red"></div>
+            <div class="simon-button blue" data-color="blue" id="blue"></div>
+            <div class="simon-button green" data-color="green" id="green"></div>
+            <div class="simon-button yellow" data-color="yellow" id="yellow"></div>
+        </div>
+
+        <div class="message" id="message"></div>
+
+        <div class="control-panel">
+            <button class="start-btn" id="startBtn" onclick="startGame()">ゲーム開始</button>
+        </div>
+    </div>
+
+    <div class="game-over-modal" id="gameOverModal">
+        <div class="modal-content">
+            <h2>ゲームオーバー</h2>
+            <p>レベル <span id="finalLevel">0</span> まで到達しました</p>
+            <div class="score" id="finalScore">0</div>
+            <button class="restart-btn" onclick="restartGame()">もう一度遊ぶ</button>
+        </div>
+    </div>
+
+    <script>
+        const colors = ['red', 'blue', 'green', 'yellow'];
+        let sequence = [];
+        let playerSequence = [];
+        let level = 0;
+        let isPlaying = false;
+        let isShowingSequence = false;
+        let canPlayerInput = false;
+        let baseSpeed = 800; // 基本の光る間隔（ミリ秒）
+        let minSpeed = 300; // 最小の光る間隔（ミリ秒）
+
+        // ハイスコアを読み込む
+        function loadHighScore() {
+            const saved = localStorage.getItem('simonHighScore');
+            return saved ? parseInt(saved) : 0;
+        }
+
+        // ハイスコアを保存
+        function saveHighScore(score) {
+            localStorage.setItem('simonHighScore', score.toString());
+        }
+
+        // ハイスコアを表示
+        function updateHighScore() {
+            const highScore = loadHighScore();
+            document.getElementById('highScore').textContent = highScore;
+        }
+
+        // ゲーム開始
+        function startGame() {
+            if (isPlaying) return;
+            
+            sequence = [];
+            playerSequence = [];
+            level = 0;
+            isPlaying = true;
+            canPlayerInput = false;
+            
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('message').textContent = '';
+            document.getElementById('gameOverModal').classList.remove('show');
+            
+            // ボタンを無効化
+            setButtonsEnabled(false);
+            
+            nextLevel();
+        }
+
+        // 次のレベルへ
+        function nextLevel() {
+            level++;
+            document.getElementById('level').textContent = level;
+            
+            // 新しい色を追加
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            sequence.push(randomColor);
+            
+            // メッセージを更新
+            document.getElementById('message').textContent = '覚えてください...';
+            document.getElementById('message').className = 'message';
+            
+            // シーケンスを表示
+            showSequence();
+        }
+
+        // シーケンスを表示
+        async function showSequence() {
+            isShowingSequence = true;
+            canPlayerInput = false;
+            
+            // レベルに応じて速度を調整（レベルが上がるほど速く）
+            const speed = Math.max(minSpeed, baseSpeed - (level - 1) * 30);
+            
+            for (let i = 0; i < sequence.length; i++) {
+                await new Promise(resolve => setTimeout(resolve, speed));
+                activateButton(sequence[i]);
+                await new Promise(resolve => setTimeout(resolve, speed));
+                deactivateButton(sequence[i]);
+            }
+            
+            isShowingSequence = false;
+            canPlayerInput = true;
+            
+            // プレイヤーの入力を受け付ける
+            document.getElementById('message').textContent = 'あなたの番です';
+            document.getElementById('message').className = 'message';
+            setButtonsEnabled(true);
+            
+            playerSequence = [];
+        }
+
+        // ボタンを光らせる
+        function activateButton(color) {
+            const button = document.getElementById(color);
+            button.classList.add('active');
+        }
+
+        // ボタンの光を消す
+        function deactivateButton(color) {
+            const button = document.getElementById(color);
+            button.classList.remove('active');
+        }
+
+        // ボタンの有効/無効を設定
+        function setButtonsEnabled(enabled) {
+            colors.forEach(color => {
+                const button = document.getElementById(color);
+                if (enabled) {
+                    button.classList.remove('disabled');
+                } else {
+                    button.classList.add('disabled');
+                }
+            });
+        }
+
+        // ボタンクリック処理
+        function handleButtonClick(color) {
+            if (!canPlayerInput || isShowingSequence) return;
+            
+            // 視覚的フィードバック
+            activateButton(color);
+            setTimeout(() => {
+                deactivateButton(color);
+            }, 150);
+            
+            playerSequence.push(color);
+            
+            // 入力が正しいかチェック
+            const currentIndex = playerSequence.length - 1;
+            if (playerSequence[currentIndex] !== sequence[currentIndex]) {
+                // 間違い
+                gameOver();
+                return;
+            }
+            
+            // シーケンスが完成したかチェック
+            if (playerSequence.length === sequence.length) {
+                // 正解！次のレベルへ
+                canPlayerInput = false;
+                setButtonsEnabled(false);
+                
+                document.getElementById('message').textContent = '正解！';
+                document.getElementById('message').className = 'message success';
+                
+                // ハイスコアを更新
+                const highScore = loadHighScore();
+                if (level > highScore) {
+                    saveHighScore(level);
+                    updateHighScore();
+                }
+                
+                setTimeout(() => {
+                    nextLevel();
+                }, 1000);
+            }
+        }
+
+        // ゲームオーバー
+        function gameOver() {
+            isPlaying = false;
+            canPlayerInput = false;
+            setButtonsEnabled(false);
+            
+            document.getElementById('message').textContent = '間違いです';
+            document.getElementById('message').className = 'message error';
+            
+            // ハイスコアを更新
+            const highScore = loadHighScore();
+            if (level - 1 > highScore) {
+                saveHighScore(level - 1);
+                updateHighScore();
+            }
+            
+            setTimeout(() => {
+                document.getElementById('finalLevel').textContent = level - 1;
+                document.getElementById('finalScore').textContent = level - 1;
+                document.getElementById('gameOverModal').classList.add('show');
+                document.getElementById('startBtn').disabled = false;
+            }, 1000);
+        }
+
+        // ゲームを再開
+        function restartGame() {
+            document.getElementById('gameOverModal').classList.remove('show');
+            startGame();
+        }
+
+        // ボタンにイベントリスナーを追加
+        colors.forEach(color => {
+            const button = document.getElementById(color);
+            
+            // マウスクリック
+            button.addEventListener('click', () => handleButtonClick(color));
+            
+            // タッチイベント（スマホ対応）
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleButtonClick(color);
+            });
+        });
+
+        // 初期化
+        window.addEventListener('DOMContentLoaded', () => {
+            updateHighScore();
+        });
+    </script>
+</body>
+</html>
