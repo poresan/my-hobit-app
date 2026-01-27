@@ -342,49 +342,49 @@
         let pits = [];
         let goalX = 0;
 
-        // ステージデータ
+        // ステージデータ（間隔を倍に、コースも倍に）
         const stages = [
             {
                 obstacles: [
-                    { x: 500, width: 60, height: 80, type: 'box' },
-                    { x: 800, width: 60, height: 100, type: 'box' },
-                    { x: 1200, width: 60, height: 60, type: 'triangle' }
+                    { x: 1000, width: 60, height: 80, type: 'box' },
+                    { x: 1600, width: 60, height: 100, type: 'box' },
+                    { x: 2400, width: 60, height: 60, type: 'triangle' }
                 ],
                 pits: [
-                    { x: 650, width: 100 },
-                    { x: 950, width: 80 }
+                    { x: 1300, width: 100 },
+                    { x: 1900, width: 80 }
                 ],
-                goal: 1500
+                goal: 3000
             },
             {
                 obstacles: [
-                    { x: 400, width: 60, height: 90, type: 'box' },
-                    { x: 700, width: 60, height: 110, type: 'triangle' },
-                    { x: 1000, width: 60, height: 70, type: 'box' },
-                    { x: 1300, width: 60, height: 100, type: 'triangle' }
+                    { x: 800, width: 60, height: 90, type: 'box' },
+                    { x: 1400, width: 60, height: 110, type: 'triangle' },
+                    { x: 2000, width: 60, height: 70, type: 'box' },
+                    { x: 2600, width: 60, height: 100, type: 'triangle' }
                 ],
                 pits: [
-                    { x: 550, width: 120 },
-                    { x: 850, width: 100 },
-                    { x: 1150, width: 90 }
+                    { x: 1100, width: 120 },
+                    { x: 1700, width: 100 },
+                    { x: 2300, width: 90 }
                 ],
-                goal: 1600
+                goal: 3200
             },
             {
                 obstacles: [
-                    { x: 350, width: 60, height: 100, type: 'box' },
-                    { x: 600, width: 60, height: 120, type: 'triangle' },
-                    { x: 850, width: 60, height: 80, type: 'box' },
-                    { x: 1100, width: 60, height: 110, type: 'triangle' },
-                    { x: 1350, width: 60, height: 95, type: 'box' }
+                    { x: 700, width: 60, height: 100, type: 'box' },
+                    { x: 1200, width: 60, height: 120, type: 'triangle' },
+                    { x: 1700, width: 60, height: 80, type: 'box' },
+                    { x: 2200, width: 60, height: 110, type: 'triangle' },
+                    { x: 2700, width: 60, height: 95, type: 'box' }
                 ],
                 pits: [
-                    { x: 500, width: 80 },
-                    { x: 750, width: 100 },
-                    { x: 1000, width: 90 },
-                    { x: 1250, width: 110 }
+                    { x: 1000, width: 80 },
+                    { x: 1500, width: 100 },
+                    { x: 2000, width: 90 },
+                    { x: 2500, width: 110 }
                 ],
-                goal: 1700
+                goal: 3400
             }
         ];
 
@@ -428,20 +428,26 @@
         }
 
         // プレイヤーが障害物の上にいるかチェック
+        // 自キャラの右下（player.x + player.width, player.y + player.height）が
+        // 1ピクセルでも障害物の上に乗っていればtrue
         function isOnObstacle(obs) {
             const obsScreenX = obs.x - cameraX;
-            const tolerance = 10; // 許容誤差（大きくする）
             
-            // プレイヤーの足が障害物の上にあるか
-            // より寛容な判定：プレイヤーの下半分が障害物の上にある
+            // プレイヤーの右下の座標
+            const playerRight = player.x + player.width;
             const playerBottom = player.y + player.height;
-            const playerCenterX = player.x + player.width / 2;
             
-            return playerCenterX > obsScreenX + tolerance &&
-                   playerCenterX < obsScreenX + obs.width - tolerance &&
-                   playerBottom >= obs.y - tolerance &&
-                   playerBottom <= obs.y + tolerance &&
-                   player.velocityY >= -2; // 落下中または着地時（少し上昇中でもOK）
+            // 右下が障害物の上に乗っているか（1ピクセルでも）
+            // 障害物の上端（obs.y）にプレイヤーの足が触れているか
+            const isOnTop = playerBottom >= obs.y - 1 && playerBottom <= obs.y + 5;
+            
+            // 右下のX座標が障害物の範囲内にあるか
+            const isInXRange = playerRight > obsScreenX && playerRight < obsScreenX + obs.width;
+            
+            // または、プレイヤーの右端が障害物の左端を超えている場合も考慮
+            const isTouching = playerRight >= obsScreenX && player.x < obsScreenX + obs.width;
+            
+            return isTouching && isOnTop;
         }
 
         // 衝突判定
@@ -452,30 +458,51 @@
                 
                 // 四角の障害物の場合
                 if (obs.type === 'box') {
-                    // 上から踏んでいる場合は完全にスキップ
-                    if (isOnObstacle(obs)) {
-                        continue;
+                    // 自キャラの右下が1ピクセルでも障害物の上に乗っていれば衝突しない
+                    const playerRight = player.x + player.width;
+                    const playerBottom = player.y + player.height;
+                    
+                    // 右下が障害物の上に乗っているかチェック
+                    const isRightBottomOnTop = playerRight >= obsScreenX && 
+                                              playerRight <= obsScreenX + obs.width &&
+                                              playerBottom >= obs.y - 1 && 
+                                              playerBottom <= obs.y + 5;
+                    
+                    // または、isOnObstacle関数で判定
+                    if (isOnObstacle(obs) || isRightBottomOnTop) {
+                        continue; // 衝突しない
                     }
                     
                     // 四角の障害物の側面・下からの衝突のみ判定
-                    // プレイヤーが障害物の上にいない場合のみ衝突判定
-                    const playerBottom = player.y + player.height;
-                    const playerTop = player.y;
-                    const obsTop = obs.y;
-                    const obsBottom = obs.y + obs.height;
+                    const playerBottomY = player.y + player.height;
+                    const playerTopY = player.y;
+                    const obsTopY = obs.y;
+                    const obsBottomY = obs.y + obs.height;
                     
-                    // 側面からの衝突（左右）
-                    if ((player.x + player.width > obsScreenX && player.x + player.width < obsScreenX + 10 && 
-                         playerTop < obsBottom && playerBottom > obsTop) ||
-                        (player.x < obsScreenX + obs.width && player.x > obsScreenX + obs.width - 10 &&
-                         playerTop < obsBottom && playerBottom > obsTop)) {
+                    // 側面からの衝突（左右）- ただし、上に乗っている場合は除外
+                    const isOnLeftSide = player.x + player.width > obsScreenX && 
+                                        player.x + player.width < obsScreenX + 15 &&
+                                        playerTopY < obsBottomY && 
+                                        playerBottomY > obsTopY &&
+                                        !isRightBottomOnTop;
+                    
+                    const isOnRightSide = player.x < obsScreenX + obs.width && 
+                                         player.x > obsScreenX + obs.width - 15 &&
+                                         playerTopY < obsBottomY && 
+                                         playerBottomY > obsTopY &&
+                                         !isRightBottomOnTop;
+                    
+                    if (isOnLeftSide || isOnRightSide) {
                         return true;
                     }
                     
                     // 下からの衝突（プレイヤーが障害物の下にいて、上に衝突）
-                    if (playerBottom > obsTop && playerTop < obsTop &&
+                    // ただし、障害物の上に乗っている場合は除外
+                    if (playerBottomY > obsTopY && 
+                        playerTopY < obsTopY &&
                         player.x + player.width > obsScreenX + 5 &&
-                        player.x < obsScreenX + obs.width - 5) {
+                        player.x < obsScreenX + obs.width - 5 &&
+                        !isRightBottomOnTop) {
                         return true;
                     }
                 } else if (obs.type === 'triangle') {
@@ -570,17 +597,29 @@
             let obstacleTop = player.groundY;
             
             for (let obs of obstacles) {
-                if (obs.type === 'box' && isOnObstacle(obs)) {
+                if (obs.type === 'box') {
                     const obsScreenX = obs.x - cameraX;
-                    obstacleTop = obs.y;
-                    onObstacle = true;
-                    // プレイヤーを障害物の上に配置
-                    if (player.y + player.height > obs.y && player.velocityY >= 0) {
-                        player.y = obs.y - player.height;
-                        player.velocityY = 0;
-                        player.isJumping = false;
+                    const playerRight = player.x + player.width;
+                    const playerBottom = player.y + player.height;
+                    
+                    // 右下が障害物の上に乗っているかチェック（1ピクセルでも）
+                    const isRightBottomOnTop = playerRight >= obsScreenX && 
+                                              playerRight <= obsScreenX + obs.width &&
+                                              playerBottom >= obs.y - 1 && 
+                                              playerBottom <= obs.y + 5;
+                    
+                    // または、isOnObstacle関数で判定
+                    if (isOnObstacle(obs) || isRightBottomOnTop) {
+                        obstacleTop = obs.y;
+                        onObstacle = true;
+                        // プレイヤーを障害物の上に配置
+                        if (player.y + player.height > obs.y && player.velocityY >= 0) {
+                            player.y = obs.y - player.height;
+                            player.velocityY = 0;
+                            player.isJumping = false;
+                        }
+                        break;
                     }
-                    break;
                 }
             }
 
