@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="毎日の習慣を記録・管理するアプリ">
+    <meta name="theme-color" content="#5ba3d0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="習慣化アプリ">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+    <title>習慣化アプリ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-gradient: linear-gradient(135deg, #a8d8ea 0%, #c8e6f5 50%, #e0f2f8 100%);
+            --text-primary: #2c5f7c;
+            --text-secondary: #6b8fa3;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --card-border: rgba(255, 255, 255, 0.5);
+            --card-shadow: rgba(44, 95, 124, 0.15);
+            --button-primary: linear-gradient(135deg, #5ba3d0 0%, #4a90c2 100%);
+            --button-primary-hover: rgba(91, 163, 208, 0.4);
+            --button-complete: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+            --button-complete-hover: rgba(78, 205, 196, 0.4);
+            --count-color: #5ba3d0;
+            --input-border-focus: #5ba3d0;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-primary);
+            transition: background 0.5s ease;
+        }
+
+        /* テーマ1: パステルブルー */
+        body.theme-blue {
+            --bg-gradient: linear-gradient(135deg, #a8d8ea 0%, #c8e6f5 50%, #e0f2f8 100%);
+            --text-primary: #2c5f7c;
+            --text-secondary: #6b8fa3;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --card-border: rgba(255, 255, 255, 0.5);
+            --card-shadow: rgba(44, 95, 124, 0.15);
+            --button-primary: linear-gradient(135deg, #5ba3d0 0%, #4a90c2 100%);
+            --button-primary-hover: rgba(91, 163, 208, 0.4);
+            --button-complete: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+            --button-complete-hover: rgba(78, 205, 196, 0.4);
+            --count-color: #5ba3d0;
+            --input-border-focus: #5ba3d0;
+        }
+
+        /* テーマ2: ダークモード */
+        body.theme-dark {
+            --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            --text-primary: #e4e4e4;
+            --text-secondary: #a0a0a0;
+            --card-bg: rgba(30, 30, 50, 0.95);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --card-shadow: rgba(0, 0, 0, 0.3);
+            --button-primary: linear-gradient(135deg, #6c5ce7 0%, #5a4fcf 100%);
+            --button-primary-hover: rgba(108, 92, 231, 0.4);
+            --button-complete: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            --button-complete-hover: rgba(0, 184, 148, 0.4);
+            --count-color: #6c5ce7;
+            --input-border-focus: #6c5ce7;
+        }
+
+        /* テーマ3: パステルピンク */
+        body.theme-pink {
+            --bg-gradient: linear-gradient(135deg, #ffeef8 0%, #fce4ec 50%, #f8bbd0 100%);
+            --text-primary: #880e4f;
+            --text-secondary: #ad1457;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --card-border: rgba(255, 255, 255, 0.5);
+            --card-shadow: rgba(136, 14, 79, 0.15);
+            --button-primary: linear-gradient(135deg, #f06292 0%, #e91e63 100%);
+            --button-primary-hover: rgba(240, 98, 146, 0.4);
+            --button-complete: linear-gradient(135deg, #ff6b9d 0%, #ff4081 100%);
+            --button-complete-hover: rgba(255, 107, 157, 0.4);
+            --count-color: #e91e63;
+            --input-border-focus: #e91e63;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .back-link:hover {
+            opacity: 0.7;
+        }
+
+        .theme-selector {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .theme-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .theme-btn.active {
+            border-color: white;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5), 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .theme-btn.blue {
+            background: linear-gradient(135deg, #a8d8ea 0%, #5ba3d0 100%);
+        }
+
+        .theme-btn.dark {
+            background: linear-gradient(135deg, #1a1a2e 0%, #6c5ce7 100%);
+        }
+
+        .theme-btn.pink {
+            background: linear-gradient(135deg, #ffeef8 0%, #f06292 100%);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text-primary);
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .add-habit-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px var(--card-shadow);
+            margin-bottom: 30px;
+            border: 1px solid var(--card-border);
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--input-border-focus);
+        }
+
+        button {
+            padding: 12px 25px;
+            background: var(--button-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--button-primary-hover);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .habits-list {
+            display: grid;
+            gap: 20px;
+        }
+
+        .habit-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px var(--card-shadow);
+            transition: transform 0.2s, box-shadow 0.2s, background 0.3s;
+            border: 1px solid var(--card-border);
+        }
+
+        .habit-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px var(--card-shadow);
+        }
+
+        .habit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .habit-name {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+
+        .delete-btn {
+            background: #ff6b6b;
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+
+        .delete-btn:hover {
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .habit-stats {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .count-display {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--count-color);
+            letter-spacing: -1px;
+        }
+
+        .count-label {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .complete-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            background: var(--button-complete);
+            font-weight: 600;
+        }
+
+        .complete-btn:hover {
+            box-shadow: 0 5px 15px var(--button-complete-hover);
+        }
+
+        .complete-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-primary);
+            padding: 60px 20px;
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+
+        .empty-state p {
+            opacity: 0.8;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .theme-selector {
+                top: 10px;
+                right: 10px;
+                gap: 8px;
+            }
+
+            .theme-btn {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-selector">
+        <button class="theme-btn blue active" onclick="changeTheme('blue')" title="パステルブルー"></button>
+        <button class="theme-btn dark" onclick="changeTheme('dark')" title="ダークモード"></button>
+        <button class="theme-btn pink" onclick="changeTheme('pink')" title="パステルピンク"></button>
+    </div>
+
+    <div class="container">
+        <a href="index.html" class="back-link">← 玄関に戻る</a>
+        <h1>📅 習慣化アプリ</h1>
+        
+        <div class="add-habit-section">
+            <div class="input-group">
+                <input type="text" id="habitInput" placeholder="習慣の名前を入力してください（例：運動、読書、勉強）">
+                <button onclick="addHabit()">習慣を追加</button>
+            </div>
+        </div>
+
+        <div id="habitsList" class="habits-list">
+            <!-- 習慣カードがここに動的に追加されます -->
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <p>まだ習慣が登録されていません。<br>上記のフォームから習慣を追加してください。</p>
+        </div>
+    </div>
+
+    <script>
+        // データをlocalStorageから読み込む
+        let habits = JSON.parse(localStorage.getItem('habits')) || [];
+
+        // テーマを切り替え
+        function changeTheme(theme) {
+            document.body.className = `theme-${theme}`;
+            localStorage.setItem('selectedTheme', theme);
+            
+            // アクティブなボタンを更新
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // 保存されたテーマを読み込む
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('selectedTheme') || 'blue';
+            document.body.className = `theme-${savedTheme}`;
+            
+            // アクティブなボタンを更新
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.classList.contains(savedTheme)) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // ページ読み込み時に習慣を表示し、テーマを読み込む
+        window.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+            renderHabits();
+        });
+
+        // 習慣を追加
+        function addHabit() {
+            const input = document.getElementById('habitInput');
+            const habitName = input.value.trim();
+
+            if (habitName === '') {
+                alert('習慣の名前を入力してください');
+                return;
+            }
+
+            // 既に同じ名前の習慣があるかチェック
+            if (habits.some(h => h.name === habitName)) {
+                alert('この習慣は既に登録されています');
+                return;
+            }
+
+            // 新しい習慣を追加
+            habits.push({
+                name: habitName,
+                count: 0,
+                lastCompleted: null
+            });
+
+            // localStorageに保存
+            saveHabits();
+
+            // 入力欄をクリア
+            input.value = '';
+
+            // 画面を更新
+            renderHabits();
+        }
+
+        // 習慣を完了（カウントアップ）
+        function completeHabit(index) {
+            habits[index].count++;
+            habits[index].lastCompleted = new Date().toISOString();
+            
+            // localStorageに保存
+            saveHabits();
+
+            // 画面を更新
+            renderHabits();
+
+            // アニメーション効果
+            const button = event.target;
+            button.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                button.style.transform = '';
+            }, 150);
+        }
+
+        // 習慣を削除
+        function deleteHabit(index) {
+            if (confirm(`「${habits[index].name}」を削除しますか？`)) {
+                habits.splice(index, 1);
+                saveHabits();
+                renderHabits();
+            }
+        }
+
+        // 習慣をlocalStorageに保存
+        function saveHabits() {
+            localStorage.setItem('habits', JSON.stringify(habits));
+        }
+
+        // 習慣リストを表示
+        function renderHabits() {
+            const habitsList = document.getElementById('habitsList');
+            const emptyState = document.getElementById('emptyState');
+
+            if (habits.length === 0) {
+                habitsList.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            habitsList.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            habitsList.innerHTML = habits.map((habit, index) => {
+                const lastCompleted = habit.lastCompleted 
+                    ? new Date(habit.lastCompleted).toLocaleDateString('ja-JP')
+                    : 'まだ完了していません';
+
+                return `
+                    <div class="habit-card">
+                        <div class="habit-header">
+                            <div class="habit-name">${escapeHtml(habit.name)}</div>
+                            <button class="delete-btn" onclick="deleteHabit(${index})">削除</button>
+                        </div>
+                        <div class="habit-stats">
+                            <div>
+                                <div class="count-display">${habit.count}</div>
+                                <div class="count-label">回完了</div>
+                            </div>
+                            <div style="flex: 1; text-align: right; color: var(--text-secondary); font-size: 0.9em; font-weight: 500;">
+                                最終完了: ${lastCompleted}
+                            </div>
+                        </div>
+                        <button class="complete-btn" onclick="completeHabit(${index})">
+                            ✓ 完了
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // XSS対策: HTMLエスケープ
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Enterキーで習慣を追加
+        document.getElementById('habitInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addHabit();
+            }
+        });
+
+        // Service Workerを登録（PWA対応）
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker登録成功:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.log('Service Worker登録失敗:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
