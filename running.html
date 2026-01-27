@@ -380,7 +380,7 @@
 
         // カメラ（スクロール位置）
         let cameraX = 0;
-        const scrollSpeed = 2.2;
+        const scrollSpeed = 1.8; // 横スクロールのスピードを下げる
 
         // 障害物と落とし穴
         let obstacles = [];
@@ -434,8 +434,8 @@
         ];
 
         // 物理定数
-        const gravity = 0.2; // よりフワッと浮遊感を出すために下げる
-        const jumpPower = -12; // 上昇速度を少し上げる
+        const gravity = 0.15; // ジャンプの浮遊を大きくするためにさらに下げる
+        const jumpPower = -10; // 上昇速度もゆっくりに
         const groundFriction = 0.9;
         const maxJumpHeight = 220; // 最大ジャンプ高さ（画面からはみ出ないように）
 
@@ -589,90 +589,89 @@
                     const obsLeft = obsScreenX;
                     const obsRight = obsScreenX + obs.width;
                     
-                    // 側面からの衝突（左右）- ただし、上に乗っている場合は除外
+                    // 障害物から降りる時（障害物の右端を超えた時）は死なない
+                    // プレイヤーが障害物の右端を超えている場合は、降りている最中なので衝突しない
+                    const isDescendingFromObstacle = playerLeft > obsRight - 5 && 
+                                                     playerBottomY >= obsTopY - 5 && 
+                                                     playerBottomY <= obsTopY + 10;
+                    
+                    // 側面からの衝突（左右）- ただし、上に乗っている場合や降りている場合は除外
                     // 左側からの衝突
                     const isOnLeftSide = playerRight > obsLeft && 
                                         playerRight < obsLeft + 20 &&
                                         playerTopY < obsBottomY && 
-                                        playerBottomY > obsTopY;
+                                        playerBottomY > obsTopY &&
+                                        !isDescendingFromObstacle;
                     
-                    // 右側からの衝突
+                    // 右側からの衝突（降りている場合は除外）
                     const isOnRightSide = playerLeft < obsRight && 
                                          playerLeft > obsRight - 20 &&
                                          playerTopY < obsBottomY && 
-                                         playerBottomY > obsTopY;
+                                         playerBottomY > obsTopY &&
+                                         !isDescendingFromObstacle;
                     
                     if (isOnLeftSide || isOnRightSide) {
                         return true;
                     }
                     
                     // 下からの衝突（プレイヤーが障害物の下にいて、上に衝突）
-                    // ただし、障害物の上に乗っている場合は除外
+                    // ただし、障害物の上に乗っている場合や降りている場合は除外
                     if (playerBottomY > obsTopY && 
                         playerTopY < obsTopY &&
                         playerRight > obsLeft + 5 &&
-                        playerLeft < obsRight - 5) {
+                        playerLeft < obsRight - 5 &&
+                        !isDescendingFromObstacle) {
                         return true;
                     }
                 } else if (obs.type === 'triangle') {
-                    // 三角の障害物は三角の部分に触れたときのみ死ぬ
+                    // 三角の障害物は三角の部分に触れたときのみ死ぬ（厳密な判定）
                     const topY = obs.y;
                     const bottomY = obs.y + obs.height;
                     const leftX = obsScreenX;
                     const rightX = obsScreenX + obs.width;
                     const centerX = obsScreenX + obs.width / 2;
                     
-                    // プレイヤーの各コーナーをチェック
-                    const playerCorners = [
+                    // プレイヤーの矩形と三角の矩形が重なっているかチェック
+                    if (player.x >= rightX || player.x + player.width <= leftX ||
+                        player.y >= bottomY || player.y + player.height <= topY) {
+                        // 矩形が重なっていない場合は衝突しない
+                        continue;
+                    }
+                    
+                    // プレイヤーの各コーナーと中心点をチェック
+                    const checkPoints = [
                         { x: player.x, y: player.y }, // 左上
                         { x: player.x + player.width, y: player.y }, // 右上
                         { x: player.x, y: player.y + player.height }, // 左下
-                        { x: player.x + player.width, y: player.y + player.height } // 右下
+                        { x: player.x + player.width, y: player.y + player.height }, // 右下
+                        { x: player.x + player.width / 2, y: player.y + player.height / 2 } // 中心
                     ];
                     
-                    // プレイヤーの各コーナーが三角の内部にあるかチェック
-                    for (let corner of playerCorners) {
+                    // 各ポイントが三角の内部にあるかチェック
+                    for (let point of checkPoints) {
                         // 三角の範囲内にいるか
-                        if (corner.x >= leftX && corner.x <= rightX &&
-                            corner.y >= topY && corner.y <= bottomY) {
-                            
-                            // 三角の左側の線: y = topY + (bottomY - topY) * (x - leftX) / (width/2)
-                            // 三角の右側の線: y = topY + (bottomY - topY) * (rightX - x) / (width/2)
-                            let leftLineY, rightLineY;
-                            
-                            if (corner.x <= centerX) {
-                                // 左側
-                                leftLineY = topY + (bottomY - topY) * (corner.x - leftX) / (obs.width / 2);
-                                if (corner.y >= leftLineY) {
-                                    return true; // 三角の内部にいる
-                                }
-                            } else {
-                                // 右側
-                                rightLineY = topY + (bottomY - topY) * (rightX - corner.x) / (obs.width / 2);
-                                if (corner.y >= rightLineY) {
-                                    return true; // 三角の内部にいる
-                                }
-                            }
+                        if (point.x < leftX || point.x > rightX ||
+                            point.y < topY || point.y > bottomY) {
+                            continue; // 範囲外
                         }
-                    }
-                    
-                    // プレイヤーの中心点もチェック
-                    const playerCenterX = player.x + player.width / 2;
-                    const playerCenterY = player.y + player.height / 2;
-                    
-                    if (playerCenterX >= leftX && playerCenterX <= rightX &&
-                        playerCenterY >= topY && playerCenterY <= bottomY) {
                         
-                        let leftLineY, rightLineY;
-                        if (playerCenterX <= centerX) {
-                            leftLineY = topY + (bottomY - topY) * (playerCenterX - leftX) / (obs.width / 2);
-                            if (playerCenterY >= leftLineY) {
-                                return true;
+                        // 三角の左側の線: y = topY + (bottomY - topY) * (x - leftX) / (width/2)
+                        // 三角の右側の線: y = topY + (bottomY - topY) * (rightX - x) / (width/2)
+                        let lineY;
+                        
+                        if (point.x <= centerX) {
+                            // 左側の線
+                            lineY = topY + (bottomY - topY) * (point.x - leftX) / (obs.width / 2);
+                            // ポイントが線より下（三角の内部）にあるか
+                            if (point.y >= lineY) {
+                                return true; // 三角の内部にいる
                             }
                         } else {
-                            rightLineY = topY + (bottomY - topY) * (rightX - playerCenterX) / (obs.width / 2);
-                            if (playerCenterY >= rightLineY) {
-                                return true;
+                            // 右側の線
+                            lineY = topY + (bottomY - topY) * (rightX - point.x) / (obs.width / 2);
+                            // ポイントが線より下（三角の内部）にあるか
+                            if (point.y >= lineY) {
+                                return true; // 三角の内部にいる
                             }
                         }
                     }
@@ -680,7 +679,7 @@
             }
 
             // 落とし穴との衝突（プレイヤーが落とし穴の上にいて、地面より下に落ちた場合）
-            // 自キャラの前部分（足の前側）だけ地面に接していても死なない
+            // 自キャラのどこでも（前部分、後ろ部分含めて）少しでも地面に接していれば死なない
             for (let pit of pits) {
                 const pitScreenX = pit.x - cameraX;
                 // プレイヤーが落とし穴の範囲内にいる
@@ -692,29 +691,27 @@
                     const playerRight = player.x + player.width;
                     const groundLevel = pit.y;
                     
-                    // プレイヤーの前部分（足の前側、右側）が地面に接しているかチェック
-                    // 着地時は前の部分だけ地面に触れることがあるので、前部分を重点的にチェック
-                    const checkPoints = 10; // チェックポイント数を増やす
+                    // プレイヤーの足の部分全体をチェック（前部分、後ろ部分含めて）
+                    // ジャンプ時は後ろの部分が落とし穴に触れていることがあるので、全体をチェック
+                    const checkPoints = 15; // チェックポイント数を増やす
                     let isTouchingGround = false;
                     
-                    // 前部分（右側）を重点的にチェック
+                    // 足の部分全体を均等にチェック（前部分、後ろ部分含めて）
                     for (let i = 0; i <= checkPoints; i++) {
-                        // 前部分（右側）をより多くチェック
                         const ratio = i / checkPoints;
-                        // 後ろ（左）から前（右）にかけて、前部分を重点的に
                         const checkX = playerLeft + (playerRight - playerLeft) * ratio;
                         const checkY = playerBottom;
                         
-                        // このポイントが地面に接しているか（15ピクセルの余裕を持たせる）
-                        if (checkY <= groundLevel + 15) {
+                        // このポイントが地面に接しているか（20ピクセルの余裕を持たせる）
+                        if (checkY <= groundLevel + 20) {
                             isTouchingGround = true;
                             break;
                         }
                     }
                     
                     // 完全に地面より下に落ちた場合のみ死ぬ
-                    // 少しでも地面に接していれば死なない
-                    if (!isTouchingGround && playerBottom > groundLevel + 15) {
+                    // 少しでも地面に接していれば死なない（前部分、後ろ部分問わず）
+                    if (!isTouchingGround && playerBottom > groundLevel + 20) {
                         return true;
                     }
                 }
