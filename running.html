@@ -624,7 +624,7 @@
                         return true;
                     }
                 } else if (obs.type === 'triangle') {
-                    // 三角の障害物は三角の部分に触れたときのみ死ぬ（厳密な判定）
+                    // 三角の障害物は三角の部分に触れたときのみ死ぬ（意図的に小さな判定）
                     const topY = obs.y;
                     const bottomY = obs.y + obs.height;
                     const leftX = obsScreenX;
@@ -638,13 +638,12 @@
                         continue;
                     }
                     
-                    // プレイヤーの各コーナーと中心点をチェック
+                    // 当たり判定を小さくするため、プレイヤーの中心部分のみをチェック
+                    // コーナーではなく、中心付近のポイントのみをチェック
                     const checkPoints = [
-                        { x: player.x, y: player.y }, // 左上
-                        { x: player.x + player.width, y: player.y }, // 右上
-                        { x: player.x, y: player.y + player.height }, // 左下
-                        { x: player.x + player.width, y: player.y + player.height }, // 右下
-                        { x: player.x + player.width / 2, y: player.y + player.height / 2 } // 中心
+                        { x: player.x + player.width / 2, y: player.y + player.height / 2 }, // 中心
+                        { x: player.x + player.width * 0.3, y: player.y + player.height * 0.7 }, // 左下寄り
+                        { x: player.x + player.width * 0.7, y: player.y + player.height * 0.7 }, // 右下寄り
                     ];
                     
                     // 各ポイントが三角の内部にあるかチェック
@@ -662,15 +661,15 @@
                         if (point.x <= centerX) {
                             // 左側の線
                             lineY = topY + (bottomY - topY) * (point.x - leftX) / (obs.width / 2);
-                            // ポイントが線より下（三角の内部）にあるか
-                            if (point.y >= lineY) {
+                            // ポイントが線より下（三角の内部）にあるか（少し余裕を持たせる）
+                            if (point.y >= lineY + 5) { // 5ピクセルの余裕で判定を小さく
                                 return true; // 三角の内部にいる
                             }
                         } else {
                             // 右側の線
                             lineY = topY + (bottomY - topY) * (rightX - point.x) / (obs.width / 2);
-                            // ポイントが線より下（三角の内部）にあるか
-                            if (point.y >= lineY) {
+                            // ポイントが線より下（三角の内部）にあるか（少し余裕を持たせる）
+                            if (point.y >= lineY + 5) { // 5ピクセルの余裕で判定を小さく
                                 return true; // 三角の内部にいる
                             }
                         }
@@ -679,39 +678,43 @@
             }
 
             // 落とし穴との衝突（プレイヤーが落とし穴の上にいて、地面より下に落ちた場合）
-            // 自キャラのどこでも（前部分、後ろ部分含めて）少しでも地面に接していれば死なない
+            // 自キャラが少しでも地面についていたら死なない（ジャンプで渡りきっていない場合も含む）
             for (let pit of pits) {
                 const pitScreenX = pit.x - cameraX;
-                // プレイヤーが落とし穴の範囲内にいる
-                if (player.x + player.width > pitScreenX &&
-                    player.x < pitScreenX + pit.width) {
-                    // プレイヤーの足の部分（下の部分）をチェック
-                    const playerBottom = player.y + player.height;
-                    const playerLeft = player.x;
-                    const playerRight = player.x + player.width;
-                    const groundLevel = pit.y;
+                const groundLevel = pit.y;
+                const playerBottom = player.y + player.height;
+                const playerLeft = player.x;
+                const playerRight = player.x + player.width;
+                
+                // プレイヤーが落とし穴の範囲と重なっているか（完全に渡りきっていない場合も含む）
+                const isOverlapping = playerRight > pitScreenX && playerLeft < pitScreenX + pit.width;
+                
+                if (isOverlapping) {
+                    // プレイヤーの足の部分が落とし穴の範囲内にある部分をチェック
+                    const overlapLeft = Math.max(playerLeft, pitScreenX);
+                    const overlapRight = Math.min(playerRight, pitScreenX + pit.width);
                     
-                    // プレイヤーの足の部分全体をチェック（前部分、後ろ部分含めて）
-                    // ジャンプ時は後ろの部分が落とし穴に触れていることがあるので、全体をチェック
-                    const checkPoints = 15; // チェックポイント数を増やす
+                    // 重なっている部分の足の部分をチェック
+                    const checkPoints = 20; // チェックポイント数を増やす
                     let isTouchingGround = false;
                     
-                    // 足の部分全体を均等にチェック（前部分、後ろ部分含めて）
+                    // 重なっている部分の足の部分を均等にチェック
                     for (let i = 0; i <= checkPoints; i++) {
                         const ratio = i / checkPoints;
-                        const checkX = playerLeft + (playerRight - playerLeft) * ratio;
+                        const checkX = overlapLeft + (overlapRight - overlapLeft) * ratio;
                         const checkY = playerBottom;
                         
-                        // このポイントが地面に接しているか（20ピクセルの余裕を持たせる）
-                        if (checkY <= groundLevel + 20) {
+                        // このポイントが地面に接しているか（30ピクセルの余裕を持たせる）
+                        // ジャンプで渡りきっていない場合でも、少しでも地面に接していれば死なない
+                        if (checkY <= groundLevel + 30) {
                             isTouchingGround = true;
                             break;
                         }
                     }
                     
                     // 完全に地面より下に落ちた場合のみ死ぬ
-                    // 少しでも地面に接していれば死なない（前部分、後ろ部分問わず）
-                    if (!isTouchingGround && playerBottom > groundLevel + 20) {
+                    // 少しでも地面に接していれば死なない（ジャンプで渡りきっていない場合も含む）
+                    if (!isTouchingGround && playerBottom > groundLevel + 30) {
                         return true;
                     }
                 }
@@ -1011,6 +1014,13 @@
                 const gameOverModal = document.getElementById('gameOverModal');
                 if (gameOverModal.classList.contains('show')) {
                     restartStage();
+                    return;
+                }
+                
+                // ステージクリアモーダルが表示されている場合は次のステージへ
+                const stageClearModal = document.getElementById('stageClearModal');
+                if (stageClearModal.classList.contains('show')) {
+                    nextStage();
                     return;
                 }
                 
