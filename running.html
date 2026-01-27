@@ -231,6 +231,73 @@
             box-shadow: 0 5px 15px rgba(255, 255, 255, 0.4);
         }
 
+        .start-screen-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .start-screen-modal.hidden {
+            display: none;
+        }
+
+        .start-screen-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            max-width: 90%;
+            width: 500px;
+            color: white;
+        }
+
+        .start-screen-content h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        .start-screen-content p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .start-btn {
+            padding: 20px 60px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.5em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .start-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .last-update {
+            margin-top: 30px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
         @media (max-width: 600px) {
             h1 {
                 font-size: 2em;
@@ -283,6 +350,15 @@
             <h2>🎉 ステージクリア！</h2>
             <p id="stageClearMessage">ステージ1をクリアしました！</p>
             <button class="next-stage-btn" onclick="nextStage()">次のステージへ</button>
+        </div>
+    </div>
+
+    <div class="start-screen-modal" id="startScreenModal">
+        <div class="start-screen-content">
+            <h2>🏃 ランニングゲーム</h2>
+            <p>ジャンプで障害物を避けてゴールを目指そう！</p>
+            <button class="start-btn" onclick="hideStartScreen()">ゲーム開始</button>
+            <div class="last-update" id="lastUpdate"></div>
         </div>
     </div>
 
@@ -389,7 +465,7 @@
         ];
 
         // 物理定数
-        const gravity = 0.35;
+        const gravity = 0.28; // よりフワッと浮遊感を出すために下げる
         const jumpPower = -16;
         const groundFriction = 0.9;
         const maxJumpHeight = 220; // 最大ジャンプ高さ（画面からはみ出ないように）
@@ -535,13 +611,19 @@
             }
 
             // 落とし穴との衝突（プレイヤーが落とし穴の上にいて、地面より下に落ちた場合）
+            // ただし、自キャラが1ピクセルでも地面と接触していれば死なない
             for (let pit of pits) {
                 const pitScreenX = pit.x - cameraX;
                 // プレイヤーが落とし穴の範囲内にいる
                 if (player.x + player.width > pitScreenX &&
                     player.x < pitScreenX + pit.width) {
-                    // プレイヤーが地面より下に落ちた場合
-                    if (player.y + player.height > pit.y) {
+                    // プレイヤーの足（player.y + player.height）が地面（pit.y）より下に落ちた場合
+                    // ただし、1ピクセルでも地面と接触していれば（player.y + player.height <= pit.y + 1）死なない
+                    const playerBottom = player.y + player.height;
+                    const groundLevel = pit.y;
+                    
+                    // 完全に地面より下に落ちた場合のみ死ぬ（1ピクセルの余裕を持たせる）
+                    if (playerBottom > groundLevel + 1) {
                         return true;
                     }
                 }
@@ -816,11 +898,34 @@
             gameLoop();
         }
 
+        // スタート画面を非表示にする
+        function hideStartScreen() {
+            document.getElementById('startScreenModal').classList.add('hidden');
+            loadStage(1);
+            startGame();
+        }
+
+        // 最終更新日時を表示
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const dateStr = `${year}年${month}月${day}日 ${hours}:${minutes}`;
+            document.getElementById('lastUpdate').textContent = `最終更新: ${dateStr}`;
+        }
+
         // イベントリスナー
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                 e.preventDefault();
-                jump();
+                if (!document.getElementById('startScreenModal').classList.contains('hidden')) {
+                    hideStartScreen();
+                } else {
+                    jump();
+                }
             }
         });
 
@@ -831,8 +936,8 @@
         });
 
         // 初期化
-        loadStage(1);
-        startGame();
+        updateLastUpdateTime();
+        // ゲームは自動開始しない（スタートボタンを待つ）
     </script>
 </body>
 </html>
