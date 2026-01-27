@@ -624,7 +624,7 @@
                         return true;
                     }
                 } else if (obs.type === 'triangle') {
-                    // 三角の障害物は三角の部分に触れたときのみ死ぬ（意図的に小さな判定）
+                    // 三角の障害物は三角の部分に触れたときのみ死ぬ（さらに小さな判定）
                     const topY = obs.y;
                     const bottomY = obs.y + obs.height;
                     const leftX = obsScreenX;
@@ -638,38 +638,33 @@
                         continue;
                     }
                     
-                    // 当たり判定を小さくするため、プレイヤーの中心部分のみをチェック
-                    // コーナーではなく、中心付近のポイントのみをチェック
-                    const checkPoints = [
-                        { x: player.x + player.width / 2, y: player.y + player.height / 2 }, // 中心
-                        { x: player.x + player.width * 0.3, y: player.y + player.height * 0.7 }, // 左下寄り
-                        { x: player.x + player.width * 0.7, y: player.y + player.height * 0.7 }, // 右下寄り
-                    ];
+                    // 当たり判定をさらに小さくするため、プレイヤーの中心のみをチェック
+                    // より厳密に、中心点のみをチェック
+                    const checkPoint = {
+                        x: player.x + player.width / 2,
+                        y: player.y + player.height / 2
+                    };
                     
-                    // 各ポイントが三角の内部にあるかチェック
-                    for (let point of checkPoints) {
-                        // 三角の範囲内にいるか
-                        if (point.x < leftX || point.x > rightX ||
-                            point.y < topY || point.y > bottomY) {
-                            continue; // 範囲外
-                        }
+                    // 中心点が三角の範囲内にいるか
+                    if (checkPoint.x >= leftX && checkPoint.x <= rightX &&
+                        checkPoint.y >= topY && checkPoint.y <= bottomY) {
                         
                         // 三角の左側の線: y = topY + (bottomY - topY) * (x - leftX) / (width/2)
                         // 三角の右側の線: y = topY + (bottomY - topY) * (rightX - x) / (width/2)
                         let lineY;
                         
-                        if (point.x <= centerX) {
+                        if (checkPoint.x <= centerX) {
                             // 左側の線
-                            lineY = topY + (bottomY - topY) * (point.x - leftX) / (obs.width / 2);
-                            // ポイントが線より下（三角の内部）にあるか（少し余裕を持たせる）
-                            if (point.y >= lineY + 5) { // 5ピクセルの余裕で判定を小さく
+                            lineY = topY + (bottomY - topY) * (checkPoint.x - leftX) / (obs.width / 2);
+                            // ポイントが線より下（三角の内部）にあるか（15ピクセルの大きな余裕で判定を小さく）
+                            if (checkPoint.y >= lineY + 15) {
                                 return true; // 三角の内部にいる
                             }
                         } else {
                             // 右側の線
-                            lineY = topY + (bottomY - topY) * (rightX - point.x) / (obs.width / 2);
-                            // ポイントが線より下（三角の内部）にあるか（少し余裕を持たせる）
-                            if (point.y >= lineY + 5) { // 5ピクセルの余裕で判定を小さく
+                            lineY = topY + (bottomY - topY) * (rightX - checkPoint.x) / (obs.width / 2);
+                            // ポイントが線より下（三角の内部）にあるか（15ピクセルの大きな余裕で判定を小さく）
+                            if (checkPoint.y >= lineY + 15) {
                                 return true; // 三角の内部にいる
                             }
                         }
@@ -678,7 +673,7 @@
             }
 
             // 落とし穴との衝突（プレイヤーが落とし穴の上にいて、地面より下に落ちた場合）
-            // 自キャラが少しでも地面についていたら死なない（ジャンプで渡りきっていない場合も含む）
+            // 着地時に少しでも触れていればOK
             for (let pit of pits) {
                 const pitScreenX = pit.x - cameraX;
                 const groundLevel = pit.y;
@@ -694,8 +689,8 @@
                     const overlapLeft = Math.max(playerLeft, pitScreenX);
                     const overlapRight = Math.min(playerRight, pitScreenX + pit.width);
                     
-                    // 重なっている部分の足の部分をチェック
-                    const checkPoints = 20; // チェックポイント数を増やす
+                    // 重なっている部分の足の部分をチェック（着地時を考慮）
+                    const checkPoints = 30; // チェックポイント数をさらに増やす
                     let isTouchingGround = false;
                     
                     // 重なっている部分の足の部分を均等にチェック
@@ -704,17 +699,17 @@
                         const checkX = overlapLeft + (overlapRight - overlapLeft) * ratio;
                         const checkY = playerBottom;
                         
-                        // このポイントが地面に接しているか（30ピクセルの余裕を持たせる）
-                        // ジャンプで渡りきっていない場合でも、少しでも地面に接していれば死なない
-                        if (checkY <= groundLevel + 30) {
+                        // このポイントが地面に接しているか（50ピクセルの大きな余裕を持たせる）
+                        // 着地時に少しでも触れていればOK
+                        if (checkY <= groundLevel + 50) {
                             isTouchingGround = true;
                             break;
                         }
                     }
                     
                     // 完全に地面より下に落ちた場合のみ死ぬ
-                    // 少しでも地面に接していれば死なない（ジャンプで渡りきっていない場合も含む）
-                    if (!isTouchingGround && playerBottom > groundLevel + 30) {
+                    // 着地時に少しでも地面に接していれば死なない
+                    if (!isTouchingGround && playerBottom > groundLevel + 50) {
                         return true;
                     }
                 }
@@ -1037,6 +1032,26 @@
         document.getElementById('jumpBtn').addEventListener('touchstart', (e) => {
             e.preventDefault();
             jump();
+        });
+
+        // タブレット対応：画面のどこを押してもジャンプ
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameRunning && !gamePaused) {
+                jump();
+            }
+        });
+
+        // ゲームコンテナ全体でもタッチイベントを受け付ける
+        document.querySelector('.game-container').addEventListener('touchstart', (e) => {
+            // ボタンやリンク以外の場所をタッチした場合のみジャンプ
+            if (e.target === canvas || e.target === document.querySelector('.game-info') || 
+                e.target.closest('.game-info') || e.target.closest('.controls')) {
+                e.preventDefault();
+                if (gameRunning && !gamePaused) {
+                    jump();
+                }
+            }
         });
 
         // 初期化
