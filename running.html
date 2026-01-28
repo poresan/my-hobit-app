@@ -539,6 +539,19 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
+        // パフォーマンス最適化：モバイルデバイス検出
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+        const isLowEndDevice = isMobile || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
+        
+        // 軽量モード設定（タブレット/モバイルでは重いエフェクトを無効化）
+        const useLightweightMode = isLowEndDevice;
+        
+        // Canvas描画の最適化（軽量モードでは画像スムージングを無効化してパフォーマンス向上）
+        if (useLightweightMode) {
+            ctx.imageSmoothingEnabled = false;
+        }
+        
         // キャンバスのサイズを設定
         function resizeCanvas() {
             const maxWidth = 800;
@@ -559,6 +572,11 @@
         
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
+
+        // フレームレート制限（タブレットでは30fpsに制限）
+        let lastFrameTime = 0;
+        const targetFPS = useLightweightMode ? 30 : 60;
+        const frameInterval = 1000 / targetFPS;
 
         // ゲーム状態
         let currentStage = 1;
@@ -1024,11 +1042,19 @@
                 return;
             }
 
-            // 描画
-            draw();
+            // フレームレート制限（タブレットでは30fpsに制限）
+            const currentTime = performance.now();
+            const elapsed = currentTime - lastFrameTime;
+            
+            if (elapsed >= frameInterval) {
+                lastFrameTime = currentTime - (elapsed % frameInterval);
+                
+                // 描画
+                draw();
 
-            // 表示更新
-            updateDisplay();
+                // 表示更新
+                updateDisplay();
+            }
 
             requestAnimationFrame(gameLoop);
         }
@@ -1047,19 +1073,21 @@
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // 背景の光の効果（固定位置）
-            const lightGradient = ctx.createRadialGradient(
-                canvas.width * 0.3, 
-                canvas.height * 0.3, 
-                0,
-                canvas.width * 0.3, 
-                canvas.height * 0.3, 
-                canvas.width * 0.8
-            );
-            lightGradient.addColorStop(0, 'rgba(102, 126, 234, 0.2)');
-            lightGradient.addColorStop(1, 'rgba(102, 126, 234, 0)');
-            ctx.fillStyle = lightGradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // 背景の光の効果（固定位置）- 軽量モードでは簡略化
+            if (!useLightweightMode) {
+                const lightGradient = ctx.createRadialGradient(
+                    canvas.width * 0.3, 
+                    canvas.height * 0.3, 
+                    0,
+                    canvas.width * 0.3, 
+                    canvas.height * 0.3, 
+                    canvas.width * 0.8
+                );
+                lightGradient.addColorStop(0, 'rgba(102, 126, 234, 0.2)');
+                lightGradient.addColorStop(1, 'rgba(102, 126, 234, 0)');
+                ctx.fillStyle = lightGradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
 
             // 地面 - Apple風のデザイン
             const groundGradient = ctx.createLinearGradient(0, canvas.height - groundHeight, 0, canvas.height);
@@ -1068,9 +1096,11 @@
             ctx.fillStyle = groundGradient;
             ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
             
-            // 地面のハイライト
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-            ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 2);
+            // 地面のハイライト（軽量モードでは簡略化）
+            if (!useLightweightMode) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 2);
+            }
 
             // 落とし穴を描画 - Apple風のデザイン
             for (let pit of pits) {
@@ -1088,10 +1118,12 @@
                     ctx.fillStyle = pitGradient;
                     ctx.fillRect(pitScreenX, pit.y, pit.width, pit.depth);
                     
-                    // 落とし穴の縁のハイライト
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(pitScreenX, pit.y, pit.width, 2);
+                    // 落とし穴の縁のハイライト（軽量モードでは簡略化）
+                    if (!useLightweightMode) {
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(pitScreenX, pit.y, pit.width, 2);
+                    }
                 }
             }
 
@@ -1108,8 +1140,10 @@
                         triangleGradient.addColorStop(0, '#ff6b6b');
                         triangleGradient.addColorStop(1, '#ee5a6f');
                         
-                        ctx.shadowBlur = 20;
-                        ctx.shadowColor = 'rgba(255, 107, 107, 0.5)';
+                        if (!useLightweightMode) {
+                            ctx.shadowBlur = 20;
+                            ctx.shadowColor = 'rgba(255, 107, 107, 0.5)';
+                        }
                         ctx.fillStyle = triangleGradient;
                         ctx.beginPath();
                         ctx.moveTo(obsScreenX + obs.width / 2, obs.y);
@@ -1119,15 +1153,17 @@
                         ctx.fill();
                         ctx.shadowBlur = 0;
                         
-                        // ハイライト
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-                        ctx.beginPath();
-                        ctx.moveTo(obsScreenX + obs.width / 2, obs.y);
-                        ctx.lineTo(obsScreenX + obs.width * 0.3, obs.y + obs.height * 0.5);
-                        ctx.lineTo(obsScreenX + obs.width * 0.2, obs.y + obs.height);
-                        ctx.lineTo(obsScreenX, obs.y + obs.height);
-                        ctx.closePath();
-                        ctx.fill();
+                        // ハイライト（軽量モードでは簡略化）
+                        if (!useLightweightMode) {
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                            ctx.beginPath();
+                            ctx.moveTo(obsScreenX + obs.width / 2, obs.y);
+                            ctx.lineTo(obsScreenX + obs.width * 0.3, obs.y + obs.height * 0.5);
+                            ctx.lineTo(obsScreenX + obs.width * 0.2, obs.y + obs.height);
+                            ctx.lineTo(obsScreenX, obs.y + obs.height);
+                            ctx.closePath();
+                            ctx.fill();
+                        }
                     } else {
                         // 四角の障害物を描画（グラデーション）
                         const boxGradient = ctx.createLinearGradient(
@@ -1137,19 +1173,23 @@
                         boxGradient.addColorStop(0, '#8B6F47');
                         boxGradient.addColorStop(1, '#6B5432');
                         
-                        ctx.shadowBlur = 15;
-                        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+                        if (!useLightweightMode) {
+                            ctx.shadowBlur = 15;
+                            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+                        }
                         ctx.fillStyle = boxGradient;
                         ctx.fillRect(obsScreenX, obs.y, obs.width, obs.height);
                         ctx.shadowBlur = 0;
                         
-                        // ハイライト
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-                        ctx.fillRect(obsScreenX, obs.y, obs.width, obs.height * 0.3);
-                        
-                        // 影
-                        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-                        ctx.fillRect(obsScreenX + 3, obs.y + obs.height, obs.width, 6);
+                        // ハイライト（軽量モードでは簡略化）
+                        if (!useLightweightMode) {
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                            ctx.fillRect(obsScreenX, obs.y, obs.width, obs.height * 0.3);
+                            
+                            // 影
+                            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                            ctx.fillRect(obsScreenX + 3, obs.y + obs.height, obs.width, 6);
+                        }
                     }
                 }
             }
@@ -1157,17 +1197,19 @@
             // ゴールを描画 - Apple風のデザイン
             const goalScreenX = goalX - cameraX;
             if (goalScreenX > -100 && goalScreenX < canvas.width + 100) {
-                // ゴールの光の効果
-                const goalGlow = ctx.createRadialGradient(
-                    goalScreenX, canvas.height - groundHeight - 75,
-                    0,
-                    goalScreenX, canvas.height - groundHeight - 75,
-                    100
-                );
-                goalGlow.addColorStop(0, 'rgba(76, 175, 80, 0.4)');
-                goalGlow.addColorStop(1, 'rgba(76, 175, 80, 0)');
-                ctx.fillStyle = goalGlow;
-                ctx.fillRect(goalScreenX - 100, 0, 200, canvas.height);
+                // ゴールの光の効果（軽量モードでは簡略化）
+                if (!useLightweightMode) {
+                    const goalGlow = ctx.createRadialGradient(
+                        goalScreenX, canvas.height - groundHeight - 75,
+                        0,
+                        goalScreenX, canvas.height - groundHeight - 75,
+                        100
+                    );
+                    goalGlow.addColorStop(0, 'rgba(76, 175, 80, 0.4)');
+                    goalGlow.addColorStop(1, 'rgba(76, 175, 80, 0)');
+                    ctx.fillStyle = goalGlow;
+                    ctx.fillRect(goalScreenX - 100, 0, 200, canvas.height);
+                }
                 
                 // ゴールフラッグ（グラデーション）
                 const flagGradient = ctx.createLinearGradient(
@@ -1177,15 +1219,19 @@
                 flagGradient.addColorStop(0, '#4CAF50');
                 flagGradient.addColorStop(1, '#2E7D32');
                 
-                ctx.shadowBlur = 20;
-                ctx.shadowColor = 'rgba(76, 175, 80, 0.6)';
+                if (!useLightweightMode) {
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = 'rgba(76, 175, 80, 0.6)';
+                }
                 ctx.fillStyle = flagGradient;
                 ctx.fillRect(goalScreenX - 5, canvas.height - groundHeight - 150, 10, 150);
                 ctx.shadowBlur = 0;
                 
-                // フラッグのハイライト
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-                ctx.fillRect(goalScreenX - 5, canvas.height - groundHeight - 150, 10, 50);
+                // フラッグのハイライト（軽量モードでは簡略化）
+                if (!useLightweightMode) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.fillRect(goalScreenX - 5, canvas.height - groundHeight - 150, 10, 50);
+                }
                 
                 // フラッグの布部分（グラデーション）
                 const clothGradient = ctx.createLinearGradient(
@@ -1205,9 +1251,11 @@
             }
 
             // プレイヤーを描画 - Apple風のデザイン
-            // プレイヤーの影
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-            ctx.fillRect(player.x + 3, player.y + player.height + 2, player.width, 4);
+            // プレイヤーの影（軽量モードでは簡略化）
+            if (!useLightweightMode) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.fillRect(player.x + 3, player.y + player.height + 2, player.width, 4);
+            }
             
             // プレイヤーの本体（グラデーション）
             const playerGradient = ctx.createLinearGradient(
@@ -1217,14 +1265,18 @@
             playerGradient.addColorStop(0, '#ff7a8a');
             playerGradient.addColorStop(1, '#ff6b6b');
             ctx.fillStyle = playerGradient;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = 'rgba(255, 107, 107, 0.5)';
+            if (!useLightweightMode) {
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'rgba(255, 107, 107, 0.5)';
+            }
             ctx.fillRect(player.x, player.y, player.width, player.height);
             ctx.shadowBlur = 0;
             
-            // プレイヤーのハイライト
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            ctx.fillRect(player.x, player.y, player.width, player.height * 0.3);
+            // プレイヤーのハイライト（軽量モードでは簡略化）
+            if (!useLightweightMode) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.fillRect(player.x, player.y, player.width, player.height * 0.3);
+            }
             
             // プレイヤーの目
             ctx.fillStyle = '#ffffff';
@@ -1234,8 +1286,8 @@
             ctx.fillRect(player.x + 12, player.y + 17, 4, 4);
             ctx.fillRect(player.x + 24, player.y + 17, 4, 4);
             
-            // ジャンプ時のグロー効果
-            if (player.isJumping && player.velocityY < 0) {
+            // ジャンプ時のグロー効果（軽量モードでは無効化）
+            if (!useLightweightMode && player.isJumping && player.velocityY < 0) {
                 ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
                 ctx.shadowBlur = 20;
                 ctx.shadowColor = 'rgba(102, 126, 234, 0.8)';
@@ -1244,15 +1296,18 @@
             }
 
             // 雲を描画（装飾）- Apple風の洗練された雲（固定位置）
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-            for (let i = 0; i < 4; i++) {
-                const cloudX = (i * 400) % canvas.width;
-                const cloudY = 40 + Math.sin(i) * 10;
-                ctx.beginPath();
-                ctx.arc(cloudX, cloudY, 25, 0, Math.PI * 2);
-                ctx.arc(cloudX + 30, cloudY, 30, 0, Math.PI * 2);
-                ctx.arc(cloudX + 60, cloudY, 25, 0, Math.PI * 2);
-                ctx.fill();
+            // 軽量モードでは雲を描画しない（パフォーマンス向上）
+            if (!useLightweightMode) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                for (let i = 0; i < 4; i++) {
+                    const cloudX = (i * 400) % canvas.width;
+                    const cloudY = 40 + Math.sin(i) * 10;
+                    ctx.beginPath();
+                    ctx.arc(cloudX, cloudY, 25, 0, Math.PI * 2);
+                    ctx.arc(cloudX + 30, cloudY, 30, 0, Math.PI * 2);
+                    ctx.arc(cloudX + 60, cloudY, 25, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
         }
 
