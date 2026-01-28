@@ -498,6 +498,7 @@
         <div class="start-section">
             <button class="start-btn" id="startBtn">ゲーム開始</button>
             <div class="last-update" id="lastUpdate"></div>
+            <div id="errorMessage" style="display: none; color: #ff6b6b; margin-top: 10px; padding: 10px; background: rgba(255, 107, 107, 0.1); border-radius: 8px; font-size: 0.9em;"></div>
         </div>
 
         <div class="game-info">
@@ -789,31 +790,47 @@
 
         // ステージを読み込む
         function loadStage(stageNumber) {
-            const stage = stages[stageNumber - 1];
-            obstacles = stage.obstacles.map(obs => ({
-                ...obs,
-                y: canvas.height - groundHeight - obs.height,
-                type: obs.type || 'box' // デフォルトはbox
-            }));
-            pits = stage.pits.map(pit => ({
-                ...pit,
-                y: canvas.height - groundHeight,
-                depth: 200
-            }));
-            goalX = stage.goal;
-            
-            // プレイヤーをリセット
-            player.x = 100;
-            player.velocityY = 0;
-            player.isJumping = false;
-            cameraX = 0;
-            targetCameraX = 0;
-            
-            // 地面の位置を再計算してからプレイヤーを配置
-            updatePlayerGroundPosition();
-            player.y = player.groundY;
-            
-            updateDisplay();
+            try {
+                if (!canvas || canvas.height === 0) {
+                    console.error('Canvasが初期化されていません');
+                    return;
+                }
+                
+                const stage = stages[stageNumber - 1];
+                if (!stage) {
+                    console.error('ステージが見つかりません:', stageNumber);
+                    return;
+                }
+                
+                obstacles = stage.obstacles.map(obs => ({
+                    ...obs,
+                    y: canvas.height - groundHeight - obs.height,
+                    type: obs.type || 'box' // デフォルトはbox
+                }));
+                pits = stage.pits.map(pit => ({
+                    ...pit,
+                    y: canvas.height - groundHeight,
+                    depth: 200
+                }));
+                goalX = stage.goal;
+                
+                // プレイヤーをリセット
+                player.x = 100;
+                player.velocityY = 0;
+                player.isJumping = false;
+                cameraX = 0;
+                targetCameraX = 0;
+                
+                // 地面の位置を再計算してからプレイヤーを配置
+                updatePlayerGroundPosition();
+                player.y = player.groundY;
+                
+                updateDisplay();
+                console.log('ステージ', stageNumber, 'を読み込みました');
+            } catch (error) {
+                console.error('ステージ読み込み時にエラーが発生しました:', error);
+                throw error;
+            }
         }
 
         // ジャンプ
@@ -1492,15 +1509,50 @@
             gameLoop();
         }
 
+        // エラーメッセージを表示する関数
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            if (errorDiv) {
+                errorDiv.textContent = 'エラー: ' + message;
+                errorDiv.style.display = 'block';
+                console.error(message);
+            }
+        }
+        
+        // エラーメッセージを非表示にする関数
+        function hideError() {
+            const errorDiv = document.getElementById('errorMessage');
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+            }
+        }
+        
         // スタートボタンの処理
         function handleStart() {
-            const startBtn = document.getElementById('startBtn');
-            if (startBtn.disabled) return;
-            
-            startBtn.disabled = true;
-            startBtn.textContent = 'ゲーム中...';
-            loadStage(1);
-            startGame();
+            try {
+                hideError();
+                const startBtn = document.getElementById('startBtn');
+                if (startBtn.disabled) return;
+                
+                startBtn.disabled = true;
+                startBtn.textContent = 'ゲーム中...';
+                
+                console.log('ゲーム開始処理を実行します...');
+                console.log('Canvasサイズ:', canvas.width, 'x', canvas.height);
+                console.log('プレイヤーサイズ:', player.width, 'x', player.height);
+                
+                loadStage(1);
+                startGame();
+                console.log('ゲーム開始処理が完了しました');
+            } catch (error) {
+                console.error('ゲーム開始時にエラーが発生しました:', error);
+                showError(error.message || '不明なエラーが発生しました');
+                const startBtn = document.getElementById('startBtn');
+                if (startBtn) {
+                    startBtn.disabled = false;
+                    startBtn.textContent = 'ゲーム開始';
+                }
+            }
         }
 
         // 最終更新日時を表示
