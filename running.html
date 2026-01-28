@@ -985,13 +985,27 @@
             }
             
             player.velocityY += currentGravity;
-            player.y += player.velocityY;
-
+            
             // 最大ジャンプ高さの制限（画面からはみ出ないように）
+            // 制限に近づいたら滑らかに減速させる
             const minY = player.groundY - maxJumpHeight;
+            const distanceToLimit = player.y - minY;
+            
+            if (distanceToLimit < 20 && player.velocityY < 0) {
+                // 制限に近づいたら（20ピクセル以内）、上昇速度を滑らかに減らす
+                const slowdownFactor = Math.max(0.3, distanceToLimit / 20);
+                player.velocityY *= slowdownFactor;
+            }
+            
+            player.y += player.velocityY;
+            
+            // 最終的な制限（完全に超えた場合のみ強制的に止める）
             if (player.y < minY) {
                 player.y = minY;
-                player.velocityY = 0;
+                // 完全に止めるのではなく、自然に下降を開始
+                if (player.velocityY < 0) {
+                    player.velocityY = 0;
+                }
             }
 
             // 落とし穴の上にいるかチェック
