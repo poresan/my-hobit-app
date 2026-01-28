@@ -588,8 +588,8 @@
         const player = {
             x: 100,
             y: 0,
-            width: 90,
-            height: 90,
+            width: 180,
+            height: 180,
             velocityY: 0,
             isJumping: false,
             groundY: 0,
@@ -610,9 +610,9 @@
             // スプライトシートの1コマの幅を計算（横に4コマ並んでいる）
             spriteFrameWidth = playerSpriteSheet.width / spriteFrameCount;
             
-            // 画像のアスペクト比を維持しながら、高さを90pxに合わせてサイズを調整
+            // 画像のアスペクト比を維持しながら、高さを180pxに合わせてサイズを調整（約2倍）
             const imageAspectRatio = spriteFrameWidth / playerSpriteSheet.height;
-            player.height = 90; // 大きめのサイズ
+            player.height = 180; // 約2倍のサイズ
             player.width = player.height * imageAspectRatio;
             
             // 地面の位置を再計算（足が地面につくように）
@@ -1205,27 +1205,32 @@
                 ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 2);
             }
 
-            // 落とし穴を描画 - Apple風のデザイン
+            // 落とし穴を描画 - 視認性の高い色
             for (let pit of pits) {
                 const pitScreenX = pit.x - cameraX;
                 if (pitScreenX > -pit.width && pitScreenX < canvas.width) {
-                    // 落とし穴のグラデーション
+                    // 落とし穴のグラデーション（暗い赤〜黒で危険感を演出）
                     const pitGradient = ctx.createLinearGradient(
                         pitScreenX, pit.y,
                         pitScreenX, pit.y + pit.depth
                     );
-                    pitGradient.addColorStop(0, '#1a1a1a');
-                    pitGradient.addColorStop(0.5, '#0a0a0a');
-                    pitGradient.addColorStop(1, '#000000');
+                    pitGradient.addColorStop(0, '#8b2500');
+                    pitGradient.addColorStop(0.3, '#5c1a00');
+                    pitGradient.addColorStop(0.7, '#2d0d00');
+                    pitGradient.addColorStop(1, '#0a0300');
                     
                     ctx.fillStyle = pitGradient;
                     ctx.fillRect(pitScreenX, pit.y, pit.width, pit.depth);
                     
-                    // 落とし穴の縁のハイライト（軽量モードでは簡略化）
+                    // 落とし穴の縁（オレンジで強調）
+                    ctx.strokeStyle = '#ff6b35';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(pitScreenX, pit.y, pit.width, 4);
+                    
                     if (!useLightweightMode) {
-                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                        ctx.strokeStyle = 'rgba(255, 140, 80, 0.5)';
                         ctx.lineWidth = 1;
-                        ctx.strokeRect(pitScreenX, pit.y, pit.width, 2);
+                        ctx.strokeRect(pitScreenX, pit.y, pit.width, pit.depth);
                     }
                 }
             }
@@ -1355,13 +1360,7 @@
 
             // プレイヤーを描画
             if (playerImageLoaded && spriteFrameWidth > 0) {
-                // 画像が読み込まれている場合はスプライトシートから描画
-                // プレイヤーの影（軽量モードでは簡略化）
-                if (!useLightweightMode) {
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                    ctx.fillRect(player.x + 3, player.y + player.height + 2, player.width, 4);
-                }
-                
+                // 画像が読み込まれている場合はスプライトシートから描画（影なし）
                 // スプライトシートから現在のフレームを切り出して描画
                 // 走行中はアニメーション、ジャンプ中は1コマ目を表示
                 const currentFrame = player.isJumping ? 0 : animationFrameIndex;
@@ -1376,13 +1375,7 @@
                     player.width, player.height    // 描画サイズ
                 );
             } else {
-                // 画像が読み込まれていない場合はデフォルトの描画（フォールバック）
-                // プレイヤーの影（軽量モードでは簡略化）
-                if (!useLightweightMode) {
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                    ctx.fillRect(player.x + 3, player.y + player.height + 2, player.width, 4);
-                }
-                
+                // 画像が読み込まれていない場合はデフォルトの描画（フォールバック、影なし）
                 // プレイヤーの本体（グラデーション）
                 const playerGradient = ctx.createLinearGradient(
                     player.x, player.y, 
