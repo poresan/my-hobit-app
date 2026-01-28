@@ -1362,7 +1362,7 @@
             if (playerImageLoaded && spriteFrameWidth > 0) {
                 // 画像が読み込まれている場合はスプライトシートから描画（影なし）
                 // 画像下部の余白分、描画を下にずらして足を地面に接地させる
-                const footDrawOffset = Math.floor(player.height * 0.5);  // 画像下部余白分、足を地面に接地
+                const footDrawOffset = Math.floor(player.height * 0.25);  // 画像下部余白分、足を地面に接地
                 
                 // スプライトシートから現在のフレームを切り出して描画
                 // 走行中はアニメーション、ジャンプ中は1コマ目を表示
