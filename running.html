@@ -570,8 +570,10 @@
             canvas.width = width;
             canvas.height = height;
             
-            // 地面の位置を再計算
-            updatePlayerGroundPosition();
+            // 地面の位置を再計算（playerが定義されている場合のみ）
+            if (typeof player !== 'undefined' && player) {
+                updatePlayerGroundPosition();
+            }
         }
         
         resizeCanvas();
@@ -645,12 +647,14 @@
         
         // 地面の位置を再計算する関数（足が地面につくように）
         function updatePlayerGroundPosition() {
-            if (canvas && canvas.height > 0) {
-                player.groundY = canvas.height - groundHeight - player.height;
-                // ジャンプ中でない場合は地面に配置
-                if (!player.isJumping && player.velocityY === 0) {
-                    player.y = player.groundY;
-                }
+            // playerとcanvasが定義されているかチェック
+            if (typeof player === 'undefined' || !player) return;
+            if (!canvas || canvas.height <= 0) return;
+            
+            player.groundY = canvas.height - groundHeight - player.height;
+            // ジャンプ中でない場合は地面に配置
+            if (!player.isJumping && player.velocityY === 0) {
+                player.y = player.groundY;
             }
         }
         
@@ -1568,7 +1572,19 @@
         }
 
         // イベントリスナー
-        document.getElementById('startBtn').addEventListener('click', handleStart);
+        try {
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn) {
+                startBtn.addEventListener('click', handleStart);
+                console.log('スタートボタンのイベントリスナーを設定しました');
+            } else {
+                console.error('スタートボタンが見つかりません');
+                showError('スタートボタンが見つかりません');
+            }
+        } catch (error) {
+            console.error('イベントリスナーの設定時にエラーが発生しました:', error);
+            showError('初期化エラー: ' + error.message);
+        }
         
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
@@ -1623,8 +1639,40 @@
             }
         });
 
+        // グローバルエラーハンドラー（すべてのエラーをキャッチ）
+        window.addEventListener('error', function(event) {
+            console.error('グローバルエラー:', event.error);
+            const errorMsg = event.error ? event.error.message : '不明なエラーが発生しました';
+            const errorDiv = document.getElementById('errorMessage');
+            if (errorDiv) {
+                errorDiv.textContent = 'エラー: ' + errorMsg;
+                errorDiv.style.display = 'block';
+            } else {
+                alert('エラーが発生しました: ' + errorMsg);
+            }
+        });
+        
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('未処理のPromise拒否:', event.reason);
+            const errorMsg = event.reason ? event.reason.toString() : '不明なエラー';
+            const errorDiv = document.getElementById('errorMessage');
+            if (errorDiv) {
+                errorDiv.textContent = 'エラー: ' + errorMsg;
+                errorDiv.style.display = 'block';
+            } else {
+                alert('エラーが発生しました: ' + errorMsg);
+            }
+        });
+
         // 初期化
-        updateLastUpdateTime();
+        try {
+            updateLastUpdateTime();
+            console.log('初期化が完了しました');
+        } catch (error) {
+            console.error('初期化時にエラーが発生しました:', error);
+            showError('初期化エラー: ' + error.message);
+        }
+        
         // オーディオコンテキストを初期化（ユーザーインタラクション後に有効化される）
         
         // ユーザーインタラクションでオーディオコンテキストを初期化
