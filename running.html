@@ -999,8 +999,26 @@
             targetCameraX += scrollSpeed;
             cameraX += (targetCameraX - cameraX) * 0.1; // 滑らかな補間
 
-            // プレイヤーの物理
-            player.velocityY += gravity;
+            // プレイヤーの物理（ふんわりしたジャンプ）
+            // ジャンプの頂点付近で重力を弱めることで、より滑らかな動きに
+            let currentGravity = gravity;
+            
+            // 上昇中は通常の重力、頂点付近で重力を弱め、下降中は段階的に重力を強める
+            if (player.velocityY > 0) {
+                // 下降中：段階的に重力を強める（より自然な動き）
+                // 下降速度が速いほど重力を強く
+                const fallSpeed = Math.min(player.velocityY, 5);
+                currentGravity = gravity * (1 + fallSpeed * 0.1);
+            } else if (player.velocityY > -3) {
+                // 頂点付近：重力を大幅に弱める（ふんわり感）
+                const nearTop = (player.velocityY + 3) / 3; // 0 (頂点) から 1 (少し下) への値
+                currentGravity = gravity * (0.3 + nearTop * 0.4); // 0.3倍から0.7倍まで
+            } else {
+                // 上昇中：通常の重力
+                currentGravity = gravity;
+            }
+            
+            player.velocityY += currentGravity;
             player.y += player.velocityY;
 
             // 最大ジャンプ高さの制限（画面からはみ出ないように）
@@ -1089,12 +1107,12 @@
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // 背景の光の効果
+            // 背景の光の効果（固定位置）
             const lightGradient = ctx.createRadialGradient(
-                canvas.width * 0.3 + cameraX * 0.1, 
+                canvas.width * 0.3, 
                 canvas.height * 0.3, 
                 0,
-                canvas.width * 0.3 + cameraX * 0.1, 
+                canvas.width * 0.3, 
                 canvas.height * 0.3, 
                 canvas.width * 0.8
             );
@@ -1285,11 +1303,11 @@
                 ctx.shadowBlur = 0;
             }
 
-            // 雲を描画（装飾）- Apple風の洗練された雲
+            // 雲を描画（装飾）- Apple風の洗練された雲（固定位置）
             ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
             for (let i = 0; i < 4; i++) {
-                const cloudX = (i * 400 - (cameraX * 0.2) % 1600) % canvas.width;
-                const cloudY = 40 + Math.sin((cameraX * 0.01) + i) * 10;
+                const cloudX = (i * 400) % canvas.width;
+                const cloudY = 40 + Math.sin(i) * 10;
                 ctx.beginPath();
                 ctx.arc(cloudX, cloudY, 25, 0, Math.PI * 2);
                 ctx.arc(cloudX + 30, cloudY, 30, 0, Math.PI * 2);
