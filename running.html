@@ -1361,17 +1361,19 @@
             // プレイヤーを描画
             if (playerImageLoaded && spriteFrameWidth > 0) {
                 // 画像が読み込まれている場合はスプライトシートから描画（影なし）
+                // 画像下部の余白分、描画を下にずらして足を地面に接地させる
+                const footDrawOffset = Math.floor(player.height * 0.5);  // 画像下部余白分、足を地面に接地
+                
                 // スプライトシートから現在のフレームを切り出して描画
                 // 走行中はアニメーション、ジャンプ中は1コマ目を表示
                 const currentFrame = player.isJumping ? 0 : animationFrameIndex;
                 const sourceX = currentFrame * spriteFrameWidth;
                 
-                // スプライトシートから1コマを切り出して描画
                 ctx.drawImage(
                     playerSpriteSheet,
                     sourceX, 0,                    // スプライトシート上の切り出し位置（x, y）
                     spriteFrameWidth, playerSpriteSheet.height, // 切り出すサイズ
-                    player.x, player.y,           // 描画先の位置
+                    player.x, player.y + footDrawOffset,  // 描画先の位置（下にオフセット）
                     player.width, player.height    // 描画サイズ
                 );
             } else {
