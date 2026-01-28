@@ -587,53 +587,6 @@
         let targetCameraX = 0;
         const scrollSpeed = 1.8; // 横スクロールのスピードを下げる
 
-        // パーティクルシステム
-        let particles = [];
-        
-        // パーティクルクラス
-        class Particle {
-            constructor(x, y, type = 'jump') {
-                this.x = x;
-                this.y = y;
-                this.vx = (Math.random() - 0.5) * 4;
-                this.vy = type === 'jump' ? -Math.random() * 3 - 2 : Math.random() * 2;
-                this.life = 1.0;
-                this.decay = 0.02 + Math.random() * 0.02;
-                this.size = 3 + Math.random() * 4;
-                this.type = type;
-                this.color = type === 'jump' ? 
-                    `hsl(${200 + Math.random() * 60}, 70%, ${60 + Math.random() * 20}%)` :
-                    `hsl(${0 + Math.random() * 30}, 70%, ${50 + Math.random() * 20}%)`;
-            }
-            
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.vy += 0.1; // 重力
-                this.life -= this.decay;
-            }
-            
-            draw() {
-                if (this.life <= 0) return;
-                
-                ctx.save();
-                ctx.globalAlpha = this.life;
-                ctx.fillStyle = this.color;
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            }
-        }
-
-        // パーティクルを生成
-        function createParticles(x, y, count, type = 'jump') {
-            for (let i = 0; i < count; i++) {
-                particles.push(new Particle(x, y, type));
-            }
-        }
 
         // 障害物と落とし穴
         let obstacles = [];
@@ -792,11 +745,6 @@
                 player.velocityY = jumpPower;
                 player.isJumping = true;
                 playJumpSound(); // ジャンプ効果音
-                
-                // ジャンプ時のパーティクルエフェクト
-                const particleX = player.x + player.width / 2;
-                const particleY = player.y + player.height;
-                createParticles(particleX, particleY, 15, 'jump');
             }
         }
 
@@ -1059,17 +1007,9 @@
 
             // 地面との衝突判定（落とし穴の上にいない場合のみ）
             if (!onPit && !onObstacle && player.y >= player.groundY) {
-                const wasFalling = player.velocityY > 0;
                 player.y = player.groundY;
                 player.velocityY = 0;
                 player.isJumping = false;
-                
-                // 着地時のパーティクルエフェクト
-                if (wasFalling) {
-                    const particleX = player.x + player.width / 2;
-                    const particleY = player.y + player.height;
-                    createParticles(particleX, particleY, 10, 'land');
-                }
             }
 
             // 衝突判定
@@ -1314,13 +1254,6 @@
                 ctx.arc(cloudX + 60, cloudY, 25, 0, Math.PI * 2);
                 ctx.fill();
             }
-            
-            // パーティクルを更新・描画
-            particles = particles.filter(p => {
-                p.update();
-                p.draw();
-                return p.life > 0;
-            });
         }
 
         // ゲームオーバー
@@ -1328,11 +1261,6 @@
             gameRunning = false;
             gamePaused = true;
             playGameOverSound(); // ゲームオーバー効果音
-            
-            // ゲームオーバー時のパーティクルエフェクト
-            const particleX = player.x + player.width / 2;
-            const particleY = player.y + player.height / 2;
-            createParticles(particleX, particleY, 30, 'land');
             
             document.getElementById('gameOverModal').classList.add('show');
         }
