@@ -595,6 +595,33 @@
             color: '#ff6b6b'
         };
 
+        // プレイヤー画像のスプライトシート設定
+        const playerSpriteSheet = new Image();
+        let playerImageLoaded = false;
+        const spriteFrameCount = 4; // スプライトシートのコマ数
+        let spriteFrameWidth = 0; // 1コマの幅（読み込み後に計算）
+        
+        // スプライトシート画像を読み込む
+        playerSpriteSheet.src = 'shiba.png';
+        
+        playerSpriteSheet.onload = function() {
+            playerImageLoaded = true;
+            // スプライトシートの1コマの幅を計算（横に4コマ並んでいる）
+            spriteFrameWidth = playerSpriteSheet.width / spriteFrameCount;
+            console.log('スプライトシートを読み込みました:', playerSpriteSheet.width + 'x' + playerSpriteSheet.height + 'px');
+            console.log('1コマのサイズ:', spriteFrameWidth + 'x' + playerSpriteSheet.height + 'px');
+        };
+        
+        playerSpriteSheet.onerror = function() {
+            console.warn('スプライトシート画像の読み込みに失敗しました: shiba.png');
+            playerImageLoaded = false;
+        };
+        
+        // アニメーション設定
+        let animationFrameIndex = 0;
+        let animationCounter = 0;
+        const animationSpeed = 8; // アニメーションの切り替え速度（小さいほど速い、大きいほど遅い）
+
         // 地面の高さ
         const groundHeight = 50;
         player.groundY = canvas.height - groundHeight - player.height;
@@ -964,6 +991,15 @@
             // カメラをスクロール（滑らかな補間）
             targetCameraX += scrollSpeed;
             cameraX += (targetCameraX - cameraX) * 0.1; // 滑らかな補間
+            
+            // 走行アニメーションの更新（地面にいる時のみ）
+            if (playerImageLoaded && spriteFrameWidth > 0 && !player.isJumping) {
+                animationCounter++;
+                if (animationCounter >= animationSpeed) {
+                    animationCounter = 0;
+                    animationFrameIndex = (animationFrameIndex + 1) % spriteFrameCount;
+                }
+            }
 
             // プレイヤーの物理（ふんわりしたジャンプ）
             // ジャンプの頂点付近で重力を弱めることで、より滑らかな動きに
@@ -1264,49 +1300,82 @@
                 ctx.fill();
             }
 
-            // プレイヤーを描画 - Apple風のデザイン
-            // プレイヤーの影（軽量モードでは簡略化）
-            if (!useLightweightMode) {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                ctx.fillRect(player.x + 3, player.y + player.height + 2, player.width, 4);
-            }
-            
-            // プレイヤーの本体（グラデーション）
-            const playerGradient = ctx.createLinearGradient(
-                player.x, player.y, 
-                player.x, player.y + player.height
-            );
-            playerGradient.addColorStop(0, '#ff7a8a');
-            playerGradient.addColorStop(1, '#ff6b6b');
-            ctx.fillStyle = playerGradient;
-            if (!useLightweightMode) {
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = 'rgba(255, 107, 107, 0.5)';
-            }
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-            ctx.shadowBlur = 0;
-            
-            // プレイヤーのハイライト（軽量モードでは簡略化）
-            if (!useLightweightMode) {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-                ctx.fillRect(player.x, player.y, player.width, player.height * 0.3);
-            }
-            
-            // プレイヤーの目
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(player.x + 10, player.y + 15, 8, 8);
-            ctx.fillRect(player.x + 22, player.y + 15, 8, 8);
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(player.x + 12, player.y + 17, 4, 4);
-            ctx.fillRect(player.x + 24, player.y + 17, 4, 4);
-            
-            // ジャンプ時のグロー効果（軽量モードでは無効化）
-            if (!useLightweightMode && player.isJumping && player.velocityY < 0) {
-                ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
-                ctx.shadowBlur = 20;
-                ctx.shadowColor = 'rgba(102, 126, 234, 0.8)';
-                ctx.fillRect(player.x - 5, player.y - 5, player.width + 10, player.height + 10);
+            // プレイヤーを描画
+            if (playerImageLoaded && spriteFrameWidth > 0) {
+                // 画像が読み込まれている場合はスプライトシートから描画
+                // プレイヤーの影（軽量モードでは簡略化）
+                if (!useLightweightMode) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.fillRect(player.x + 3, player.y + player.height + 2, player.width, 4);
+                }
+                
+                // スプライトシートから現在のフレームを切り出して描画
+                // 走行中はアニメーション、ジャンプ中は1コマ目を表示
+                const currentFrame = player.isJumping ? 0 : animationFrameIndex;
+                const sourceX = currentFrame * spriteFrameWidth;
+                
+                // スプライトシートから1コマを切り出して描画
+                ctx.drawImage(
+                    playerSpriteSheet,
+                    sourceX, 0,                    // スプライトシート上の切り出し位置（x, y）
+                    spriteFrameWidth, playerSpriteSheet.height, // 切り出すサイズ
+                    player.x, player.y,           // 描画先の位置
+                    player.width, player.height    // 描画サイズ
+                );
+                
+                // ジャンプ時のグロー効果（軽量モードでは無効化）
+                if (!useLightweightMode && player.isJumping && player.velocityY < 0) {
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = 'rgba(102, 126, 234, 0.8)';
+                    ctx.fillRect(player.x - 5, player.y - 5, player.width + 10, player.height + 10);
+                    ctx.shadowBlur = 0;
+                }
+            } else {
+                // 画像が読み込まれていない場合はデフォルトの描画（フォールバック）
+                // プレイヤーの影（軽量モードでは簡略化）
+                if (!useLightweightMode) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.fillRect(player.x + 3, player.y + player.height + 2, player.width, 4);
+                }
+                
+                // プレイヤーの本体（グラデーション）
+                const playerGradient = ctx.createLinearGradient(
+                    player.x, player.y, 
+                    player.x, player.y + player.height
+                );
+                playerGradient.addColorStop(0, '#ff7a8a');
+                playerGradient.addColorStop(1, '#ff6b6b');
+                ctx.fillStyle = playerGradient;
+                if (!useLightweightMode) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = 'rgba(255, 107, 107, 0.5)';
+                }
+                ctx.fillRect(player.x, player.y, player.width, player.height);
                 ctx.shadowBlur = 0;
+                
+                // プレイヤーのハイライト（軽量モードでは簡略化）
+                if (!useLightweightMode) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.fillRect(player.x, player.y, player.width, player.height * 0.3);
+                }
+                
+                // プレイヤーの目
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(player.x + 10, player.y + 15, 8, 8);
+                ctx.fillRect(player.x + 22, player.y + 15, 8, 8);
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(player.x + 12, player.y + 17, 4, 4);
+                ctx.fillRect(player.x + 24, player.y + 17, 4, 4);
+                
+                // ジャンプ時のグロー効果（軽量モードでは無効化）
+                if (!useLightweightMode && player.isJumping && player.velocityY < 0) {
+                    ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = 'rgba(102, 126, 234, 0.8)';
+                    ctx.fillRect(player.x - 5, player.y - 5, player.width + 10, player.height + 10);
+                    ctx.shadowBlur = 0;
+                }
             }
 
             // 雲を描画（装飾）- Apple風の洗練された雲（固定位置）
