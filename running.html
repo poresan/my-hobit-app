@@ -16,8 +16,8 @@
         }
 
         body {
-            font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #2d3561 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -25,34 +25,83 @@
             justify-content: center;
             padding: 20px;
             overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.15) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
         }
 
         .game-container {
             width: 100%;
             max-width: 800px;
             text-align: center;
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 1s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .back-link {
             display: inline-block;
             margin-bottom: 20px;
-            color: white;
+            color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
-            font-weight: 500;
-            transition: opacity 0.2s;
+            font-weight: 400;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-size: 1em;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .back-link:hover {
-            opacity: 0.7;
+            opacity: 1;
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
         }
 
         h1 {
             font-size: 2.5em;
             margin-bottom: 20px;
             color: white;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+            font-weight: 300;
+            letter-spacing: -0.5px;
+            animation: titleFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes titleFloat {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
         }
 
         .game-info {
@@ -61,8 +110,13 @@
             margin-bottom: 20px;
             color: white;
             font-size: 1.2em;
-            font-weight: 600;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            font-weight: 500;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .info-item {
@@ -78,45 +132,89 @@
 
         .info-value {
             font-size: 1.3em;
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: transform 0.3s ease;
+        }
+
+        .info-value:hover {
+            transform: scale(1.1);
         }
 
         #gameCanvas {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-radius: 15px;
-            background: linear-gradient(to bottom, #87CEEB 0%, #98D8C8 100%);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            background: linear-gradient(to bottom, #1e3a5f 0%, #2d5a7f 50%, #4a7ba7 100%);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+                0 1px 0 rgba(255, 255, 255, 0.1) inset;
             display: block;
             width: 100%;
             max-width: 800px;
             height: 400px;
             margin: 0 auto;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #gameCanvas:hover {
+            transform: scale(1.01);
         }
 
         .controls {
             margin-top: 20px;
-            color: white;
+            color: rgba(255, 255, 255, 0.8);
             font-size: 1em;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            font-weight: 300;
         }
 
         .jump-btn {
             margin-top: 15px;
-            padding: 15px 40px;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            padding: 16px 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 30px;
+            border-radius: 50px;
             font-size: 1.2em;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 8px 24px rgba(102, 126, 234, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
             touch-action: manipulation;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .jump-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .jump-btn:active::before {
+            width: 300px;
+            height: 300px;
         }
 
         .jump-btn:active {
-            transform: scale(0.95);
-            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+            transform: scale(0.96);
+            box-shadow: 
+                0 4px 12px rgba(102, 126, 234, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
         }
 
         .game-over-modal {
@@ -137,43 +235,86 @@
         }
 
         .modal-content {
-            background: white;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(20px);
             padding: 40px;
-            border-radius: 20px;
+            border-radius: 24px;
             text-align: center;
-            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.8),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
             max-width: 90%;
             width: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         .modal-content h2 {
             font-size: 2em;
             margin-bottom: 20px;
-            color: #333;
+            color: white;
+            font-weight: 300;
+            letter-spacing: -0.5px;
         }
 
         .modal-content p {
             font-size: 1.2em;
             margin-bottom: 10px;
-            color: #666;
+            color: rgba(255, 255, 255, 0.7);
         }
 
         .restart-btn {
-            padding: 15px 40px;
+            padding: 16px 48px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 30px;
+            border-radius: 50px;
             font-size: 1.1em;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             margin-top: 20px;
+            box-shadow: 
+                0 8px 24px rgba(102, 126, 234, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .restart-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .restart-btn:hover::before {
+            width: 300px;
+            height: 300px;
         }
 
         .restart-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 
+                0 12px 32px rgba(102, 126, 234, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
         }
 
         .stage-clear-modal {
@@ -194,14 +335,19 @@
         }
 
         .stage-clear-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(20px);
             padding: 40px;
-            border-radius: 20px;
+            border-radius: 24px;
             text-align: center;
-            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.8),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
             max-width: 90%;
             width: 400px;
             color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .stage-clear-content h2 {
@@ -215,20 +361,45 @@
         }
 
         .next-stage-btn {
-            padding: 15px 40px;
-            background: white;
-            color: #667eea;
+            padding: 16px 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             border: none;
-            border-radius: 30px;
+            border-radius: 50px;
             font-size: 1.1em;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 8px 24px rgba(102, 126, 234, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .next-stage-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .next-stage-btn:hover::before {
+            width: 300px;
+            height: 300px;
         }
 
         .next-stage-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.4);
+            box-shadow: 
+                0 12px 32px rgba(102, 126, 234, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
         }
 
         .start-section {
@@ -237,16 +408,49 @@
         }
 
         .start-btn {
-            padding: 15px 40px;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            padding: 16px 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 30px;
+            border-radius: 50px;
             font-size: 1.3em;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 8px 24px rgba(102, 126, 234, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .start-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 12px 32px rgba(102, 126, 234, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+        }
+
+        .start-btn:active {
+            transform: translateY(0);
         }
 
         .start-btn:hover {
@@ -380,7 +584,56 @@
 
         // カメラ（スクロール位置）
         let cameraX = 0;
+        let targetCameraX = 0;
         const scrollSpeed = 1.8; // 横スクロールのスピードを下げる
+
+        // パーティクルシステム
+        let particles = [];
+        
+        // パーティクルクラス
+        class Particle {
+            constructor(x, y, type = 'jump') {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = type === 'jump' ? -Math.random() * 3 - 2 : Math.random() * 2;
+                this.life = 1.0;
+                this.decay = 0.02 + Math.random() * 0.02;
+                this.size = 3 + Math.random() * 4;
+                this.type = type;
+                this.color = type === 'jump' ? 
+                    `hsl(${200 + Math.random() * 60}, 70%, ${60 + Math.random() * 20}%)` :
+                    `hsl(${0 + Math.random() * 30}, 70%, ${50 + Math.random() * 20}%)`;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.1; // 重力
+                this.life -= this.decay;
+            }
+            
+            draw() {
+                if (this.life <= 0) return;
+                
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // パーティクルを生成
+        function createParticles(x, y, count, type = 'jump') {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y, type));
+            }
+        }
 
         // 障害物と落とし穴
         let obstacles = [];
@@ -528,6 +781,7 @@
             player.velocityY = 0;
             player.isJumping = false;
             cameraX = 0;
+            targetCameraX = 0;
             
             updateDisplay();
         }
@@ -538,6 +792,11 @@
                 player.velocityY = jumpPower;
                 player.isJumping = true;
                 playJumpSound(); // ジャンプ効果音
+                
+                // ジャンプ時のパーティクルエフェクト
+                const particleX = player.x + player.width / 2;
+                const particleY = player.y + player.height;
+                createParticles(particleX, particleY, 15, 'jump');
             }
         }
 
@@ -735,8 +994,9 @@
         function gameLoop() {
             if (!gameRunning || gamePaused) return;
 
-            // カメラをスクロール
-            cameraX += scrollSpeed;
+            // カメラをスクロール（滑らかな補間）
+            targetCameraX += scrollSpeed;
+            cameraX += (targetCameraX - cameraX) * 0.1; // 滑らかな補間
 
             // プレイヤーの物理
             player.velocityY += gravity;
@@ -780,9 +1040,17 @@
 
             // 地面との衝突判定（落とし穴の上にいない場合のみ）
             if (!onPit && !onObstacle && player.y >= player.groundY) {
+                const wasFalling = player.velocityY > 0;
                 player.y = player.groundY;
                 player.velocityY = 0;
                 player.isJumping = false;
+                
+                // 着地時のパーティクルエフェクト
+                if (wasFalling) {
+                    const particleX = player.x + player.width / 2;
+                    const particleY = player.y + player.height;
+                    createParticles(particleX, particleY, 10, 'land');
+                }
             }
 
             // 衝突判定
@@ -811,73 +1079,170 @@
             // 背景をクリア
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 背景（空）
+            // 背景（空）- Apple風のグラデーション
             const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            gradient.addColorStop(0, '#87CEEB');
-            gradient.addColorStop(1, '#98D8C8');
+            gradient.addColorStop(0, '#1e3a5f');
+            gradient.addColorStop(0.3, '#2d5a7f');
+            gradient.addColorStop(0.6, '#4a7ba7');
+            gradient.addColorStop(1, '#6b9bc7');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 背景の光の効果
+            const lightGradient = ctx.createRadialGradient(
+                canvas.width * 0.3 + cameraX * 0.1, 
+                canvas.height * 0.3, 
+                0,
+                canvas.width * 0.3 + cameraX * 0.1, 
+                canvas.height * 0.3, 
+                canvas.width * 0.8
+            );
+            lightGradient.addColorStop(0, 'rgba(102, 126, 234, 0.2)');
+            lightGradient.addColorStop(1, 'rgba(102, 126, 234, 0)');
+            ctx.fillStyle = lightGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 地面
-            ctx.fillStyle = '#8B4513';
+            // 地面 - Apple風のデザイン
+            const groundGradient = ctx.createLinearGradient(0, canvas.height - groundHeight, 0, canvas.height);
+            groundGradient.addColorStop(0, '#3d2817');
+            groundGradient.addColorStop(1, '#2d1f12');
+            ctx.fillStyle = groundGradient;
             ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
             
-            // 地面のテクスチャ
-            ctx.fillStyle = '#654321';
-            for (let i = 0; i < canvas.width; i += 20) {
-                ctx.fillRect(i - (cameraX % 20), canvas.height - groundHeight, 1, groundHeight);
+            // 地面のハイライト
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 2);
+            
+            // 地面のテクスチャ（より洗練された）
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            for (let i = 0; i < canvas.width; i += 30) {
+                ctx.fillRect(i - (cameraX % 30), canvas.height - groundHeight, 1, groundHeight);
             }
 
-            // 落とし穴を描画
-            ctx.fillStyle = '#000000';
+            // 落とし穴を描画 - Apple風のデザイン
             for (let pit of pits) {
                 const pitScreenX = pit.x - cameraX;
                 if (pitScreenX > -pit.width && pitScreenX < canvas.width) {
+                    // 落とし穴のグラデーション
+                    const pitGradient = ctx.createLinearGradient(
+                        pitScreenX, pit.y,
+                        pitScreenX, pit.y + pit.depth
+                    );
+                    pitGradient.addColorStop(0, '#1a1a1a');
+                    pitGradient.addColorStop(0.5, '#0a0a0a');
+                    pitGradient.addColorStop(1, '#000000');
+                    
+                    ctx.fillStyle = pitGradient;
                     ctx.fillRect(pitScreenX, pit.y, pit.width, pit.depth);
+                    
+                    // 落とし穴の縁のハイライト
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(pitScreenX, pit.y, pit.width, 2);
                 }
             }
 
-            // 障害物を描画
+            // 障害物を描画 - Apple風のデザイン
             for (let obs of obstacles) {
                 const obsScreenX = obs.x - cameraX;
                 if (obsScreenX > -obs.width && obsScreenX < canvas.width) {
                     if (obs.type === 'triangle') {
-                        // 三角の障害物を描画
-                        ctx.fillStyle = '#ff4444';
+                        // 三角の障害物を描画（グラデーション）
+                        const triangleGradient = ctx.createLinearGradient(
+                            obsScreenX, obs.y,
+                            obsScreenX, obs.y + obs.height
+                        );
+                        triangleGradient.addColorStop(0, '#ff6b6b');
+                        triangleGradient.addColorStop(1, '#ee5a6f');
+                        
+                        ctx.shadowBlur = 20;
+                        ctx.shadowColor = 'rgba(255, 107, 107, 0.5)';
+                        ctx.fillStyle = triangleGradient;
                         ctx.beginPath();
-                        ctx.moveTo(obsScreenX + obs.width / 2, obs.y); // 頂点
-                        ctx.lineTo(obsScreenX, obs.y + obs.height); // 左下
-                        ctx.lineTo(obsScreenX + obs.width, obs.y + obs.height); // 右下
+                        ctx.moveTo(obsScreenX + obs.width / 2, obs.y);
+                        ctx.lineTo(obsScreenX, obs.y + obs.height);
+                        ctx.lineTo(obsScreenX + obs.width, obs.y + obs.height);
                         ctx.closePath();
                         ctx.fill();
+                        ctx.shadowBlur = 0;
                         
-                        // 三角の影
-                        ctx.fillStyle = '#cc0000';
+                        // ハイライト
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
                         ctx.beginPath();
-                        ctx.moveTo(obsScreenX + obs.width / 2 + 3, obs.y + 3);
-                        ctx.lineTo(obsScreenX + 3, obs.y + obs.height + 3);
-                        ctx.lineTo(obsScreenX + obs.width + 3, obs.y + obs.height + 3);
+                        ctx.moveTo(obsScreenX + obs.width / 2, obs.y);
+                        ctx.lineTo(obsScreenX + obs.width * 0.3, obs.y + obs.height * 0.5);
+                        ctx.lineTo(obsScreenX + obs.width * 0.2, obs.y + obs.height);
+                        ctx.lineTo(obsScreenX, obs.y + obs.height);
                         ctx.closePath();
                         ctx.fill();
                     } else {
-                        // 四角の障害物を描画
-                        ctx.fillStyle = '#8B4513';
-                        ctx.fillRect(obsScreenX, obs.y, obs.width, obs.height);
+                        // 四角の障害物を描画（グラデーション）
+                        const boxGradient = ctx.createLinearGradient(
+                            obsScreenX, obs.y,
+                            obsScreenX, obs.y + obs.height
+                        );
+                        boxGradient.addColorStop(0, '#8B6F47');
+                        boxGradient.addColorStop(1, '#6B5432');
                         
-                        // 障害物の影
-                        ctx.fillStyle = '#654321';
-                        ctx.fillRect(obsScreenX + 5, obs.y + obs.height, obs.width, 5);
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+                        ctx.fillStyle = boxGradient;
+                        ctx.fillRect(obsScreenX, obs.y, obs.width, obs.height);
+                        ctx.shadowBlur = 0;
+                        
+                        // ハイライト
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                        ctx.fillRect(obsScreenX, obs.y, obs.width, obs.height * 0.3);
+                        
+                        // 影
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                        ctx.fillRect(obsScreenX + 3, obs.y + obs.height, obs.width, 6);
                     }
                 }
             }
 
-            // ゴールを描画
+            // ゴールを描画 - Apple風のデザイン
             const goalScreenX = goalX - cameraX;
             if (goalScreenX > -100 && goalScreenX < canvas.width + 100) {
-                // ゴールフラッグ
-                ctx.fillStyle = '#00ff00';
+                // ゴールの光の効果
+                const goalGlow = ctx.createRadialGradient(
+                    goalScreenX, canvas.height - groundHeight - 75,
+                    0,
+                    goalScreenX, canvas.height - groundHeight - 75,
+                    100
+                );
+                goalGlow.addColorStop(0, 'rgba(76, 175, 80, 0.4)');
+                goalGlow.addColorStop(1, 'rgba(76, 175, 80, 0)');
+                ctx.fillStyle = goalGlow;
+                ctx.fillRect(goalScreenX - 100, 0, 200, canvas.height);
+                
+                // ゴールフラッグ（グラデーション）
+                const flagGradient = ctx.createLinearGradient(
+                    goalScreenX - 5, canvas.height - groundHeight - 150,
+                    goalScreenX - 5, canvas.height - groundHeight
+                );
+                flagGradient.addColorStop(0, '#4CAF50');
+                flagGradient.addColorStop(1, '#2E7D32');
+                
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = 'rgba(76, 175, 80, 0.6)';
+                ctx.fillStyle = flagGradient;
                 ctx.fillRect(goalScreenX - 5, canvas.height - groundHeight - 150, 10, 150);
-                ctx.fillStyle = '#ffff00';
+                ctx.shadowBlur = 0;
+                
+                // フラッグのハイライト
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.fillRect(goalScreenX - 5, canvas.height - groundHeight - 150, 10, 50);
+                
+                // フラッグの布部分（グラデーション）
+                const clothGradient = ctx.createLinearGradient(
+                    goalScreenX - 5, canvas.height - groundHeight - 100,
+                    goalScreenX + 30, canvas.height - groundHeight - 125
+                );
+                clothGradient.addColorStop(0, '#FFD700');
+                clothGradient.addColorStop(1, '#FFA500');
+                
+                ctx.fillStyle = clothGradient;
                 ctx.beginPath();
                 ctx.moveTo(goalScreenX - 5, canvas.height - groundHeight - 150);
                 ctx.lineTo(goalScreenX - 5, canvas.height - groundHeight - 100);
@@ -886,9 +1251,27 @@
                 ctx.fill();
             }
 
-            // プレイヤーを描画
-            ctx.fillStyle = player.color;
+            // プレイヤーを描画 - Apple風のデザイン
+            // プレイヤーの影
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fillRect(player.x + 3, player.y + player.height + 2, player.width, 4);
+            
+            // プレイヤーの本体（グラデーション）
+            const playerGradient = ctx.createLinearGradient(
+                player.x, player.y, 
+                player.x, player.y + player.height
+            );
+            playerGradient.addColorStop(0, '#ff7a8a');
+            playerGradient.addColorStop(1, '#ff6b6b');
+            ctx.fillStyle = playerGradient;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'rgba(255, 107, 107, 0.5)';
             ctx.fillRect(player.x, player.y, player.width, player.height);
+            ctx.shadowBlur = 0;
+            
+            // プレイヤーのハイライト
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.fillRect(player.x, player.y, player.width, player.height * 0.3);
             
             // プレイヤーの目
             ctx.fillStyle = '#ffffff';
@@ -897,17 +1280,34 @@
             ctx.fillStyle = '#000000';
             ctx.fillRect(player.x + 12, player.y + 17, 4, 4);
             ctx.fillRect(player.x + 24, player.y + 17, 4, 4);
+            
+            // ジャンプ時のグロー効果
+            if (player.isJumping && player.velocityY < 0) {
+                ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = 'rgba(102, 126, 234, 0.8)';
+                ctx.fillRect(player.x - 5, player.y - 5, player.width + 10, player.height + 10);
+                ctx.shadowBlur = 0;
+            }
 
-            // 雲を描画（装飾）
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            for (let i = 0; i < 3; i++) {
-                const cloudX = (i * 400 - (cameraX * 0.3) % 1200) % canvas.width;
+            // 雲を描画（装飾）- Apple風の洗練された雲
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+            for (let i = 0; i < 4; i++) {
+                const cloudX = (i * 400 - (cameraX * 0.2) % 1600) % canvas.width;
+                const cloudY = 40 + Math.sin((cameraX * 0.01) + i) * 10;
                 ctx.beginPath();
-                ctx.arc(cloudX, 50, 20, 0, Math.PI * 2);
-                ctx.arc(cloudX + 25, 50, 25, 0, Math.PI * 2);
-                ctx.arc(cloudX + 50, 50, 20, 0, Math.PI * 2);
+                ctx.arc(cloudX, cloudY, 25, 0, Math.PI * 2);
+                ctx.arc(cloudX + 30, cloudY, 30, 0, Math.PI * 2);
+                ctx.arc(cloudX + 60, cloudY, 25, 0, Math.PI * 2);
                 ctx.fill();
             }
+            
+            // パーティクルを更新・描画
+            particles = particles.filter(p => {
+                p.update();
+                p.draw();
+                return p.life > 0;
+            });
         }
 
         // ゲームオーバー
@@ -915,6 +1315,12 @@
             gameRunning = false;
             gamePaused = true;
             playGameOverSound(); // ゲームオーバー効果音
+            
+            // ゲームオーバー時のパーティクルエフェクト
+            const particleX = player.x + player.width / 2;
+            const particleY = player.y + player.height / 2;
+            createParticles(particleX, particleY, 30, 'land');
+            
             document.getElementById('gameOverModal').classList.add('show');
         }
 
