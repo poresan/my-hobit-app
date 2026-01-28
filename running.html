@@ -588,8 +588,8 @@
         const player = {
             x: 100,
             y: 0,
-            width: 70,
-            height: 70,
+            width: 90,
+            height: 90,
             velocityY: 0,
             isJumping: false,
             groundY: 0,
@@ -610,9 +610,9 @@
             // スプライトシートの1コマの幅を計算（横に4コマ並んでいる）
             spriteFrameWidth = playerSpriteSheet.width / spriteFrameCount;
             
-            // 画像のアスペクト比を維持しながら、高さを70pxに合わせてサイズを調整
+            // 画像のアスペクト比を維持しながら、高さを90pxに合わせてサイズを調整
             const imageAspectRatio = spriteFrameWidth / playerSpriteSheet.height;
-            player.height = 70; // 大きめのサイズ
+            player.height = 90; // 大きめのサイズ
             player.width = player.height * imageAspectRatio;
             
             // 地面の位置を再計算（足が地面につくように）
@@ -1375,15 +1375,6 @@
                     player.x, player.y,           // 描画先の位置
                     player.width, player.height    // 描画サイズ
                 );
-                
-                // ジャンプ時のグロー効果（軽量モードでは無効化）
-                if (!useLightweightMode && player.isJumping && player.velocityY < 0) {
-                    ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
-                    ctx.shadowBlur = 20;
-                    ctx.shadowColor = 'rgba(102, 126, 234, 0.8)';
-                    ctx.fillRect(player.x - 5, player.y - 5, player.width + 10, player.height + 10);
-                    ctx.shadowBlur = 0;
-                }
             } else {
                 // 画像が読み込まれていない場合はデフォルトの描画（フォールバック）
                 // プレイヤーの影（軽量モードでは簡略化）
@@ -1421,14 +1412,6 @@
                 ctx.fillRect(player.x + 12, player.y + 17, 4, 4);
                 ctx.fillRect(player.x + 24, player.y + 17, 4, 4);
                 
-                // ジャンプ時のグロー効果（軽量モードでは無効化）
-                if (!useLightweightMode && player.isJumping && player.velocityY < 0) {
-                    ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
-                    ctx.shadowBlur = 20;
-                    ctx.shadowColor = 'rgba(102, 126, 234, 0.8)';
-                    ctx.fillRect(player.x - 5, player.y - 5, player.width + 10, player.height + 10);
-                    ctx.shadowBlur = 0;
-                }
             }
 
             // 雲を描画（装飾）- Apple風の洗練された雲（固定位置）
