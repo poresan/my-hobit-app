@@ -569,11 +569,6 @@
             
             canvas.width = width;
             canvas.height = height;
-            
-            // 地面の位置を再計算（playerが定義されている場合のみ）
-            if (typeof player !== 'undefined' && player) {
-                updatePlayerGroundPosition();
-            }
         }
         
         resizeCanvas();
@@ -660,6 +655,11 @@
         
         // 初期位置を設定
         updatePlayerGroundPosition();
+        
+        // リサイズ時に地面位置を再計算
+        window.addEventListener('resize', function() {
+            updatePlayerGroundPosition();
+        });
 
         // カメラ（スクロール位置）
         let cameraX = 0;
