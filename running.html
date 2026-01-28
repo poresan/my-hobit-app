@@ -588,8 +588,8 @@
         const player = {
             x: 100,
             y: 0,
-            width: 40,
-            height: 50,
+            width: 70,
+            height: 70,
             velocityY: 0,
             isJumping: false,
             groundY: 0,
@@ -610,9 +610,9 @@
             // スプライトシートの1コマの幅を計算（横に4コマ並んでいる）
             spriteFrameWidth = playerSpriteSheet.width / spriteFrameCount;
             
-            // 画像のアスペクト比を維持しながら、高さを50pxに合わせてサイズを調整
+            // 画像のアスペクト比を維持しながら、高さを70pxに合わせてサイズを調整
             const imageAspectRatio = spriteFrameWidth / playerSpriteSheet.height;
-            player.height = 50; // 前の四角形と同じ高さ
+            player.height = 70; // 大きめのサイズ
             player.width = player.height * imageAspectRatio;
             
             // 地面の位置を再計算（足が地面につくように）
