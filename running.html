@@ -687,7 +687,7 @@
         ];
 
         // 物理定数
-        const gravity = 0.15; // ジャンプの浮遊を大きくするためにさらに下げる
+        const gravity = 0.12; // ジャンプの滞空時間を長くするためにさらに下げる
         const jumpPower = -10; // 上昇速度もゆっくりに
         const groundFriction = 0.9;
         const maxJumpHeight = 220; // 最大ジャンプ高さ（画面からはみ出ないように）
@@ -949,7 +949,8 @@
                     const overlapRight = Math.min(playerRight, pitScreenX + pit.width);
                     
                     // 重なっている部分の足の部分をチェック（着地時を考慮）
-                    const checkPoints = 30; // チェックポイント数をさらに増やす
+                    // 自キャラの一部でも着地できていれば死なない
+                    const checkPoints = 50; // チェックポイント数をさらに増やす
                     let isTouchingGround = false;
                     
                     // 重なっている部分の足の部分を均等にチェック
@@ -958,17 +959,17 @@
                         const checkX = overlapLeft + (overlapRight - overlapLeft) * ratio;
                         const checkY = playerBottom;
                         
-                        // このポイントが地面に接しているか（50ピクセルの大きな余裕を持たせる）
-                        // 着地時に少しでも触れていればOK
-                        if (checkY <= groundLevel + 50) {
+                        // このポイントが地面に接しているか（80ピクセルの大きな余裕を持たせる）
+                        // 自キャラの一部でも着地できていればOK
+                        if (checkY <= groundLevel + 80) {
                             isTouchingGround = true;
                             break;
                         }
                     }
                     
                     // 完全に地面より下に落ちた場合のみ死ぬ
-                    // 着地時に少しでも地面に接していれば死なない
-                    if (!isTouchingGround && playerBottom > groundLevel + 50) {
+                    // 自キャラの一部でも着地できていれば死なない
+                    if (!isTouchingGround && playerBottom > groundLevel + 80) {
                         return true;
                     }
                 }
@@ -1112,12 +1113,6 @@
             // 地面のハイライト
             ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
             ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 2);
-            
-            // 地面のテクスチャ（より洗練された）
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-            for (let i = 0; i < canvas.width; i += 30) {
-                ctx.fillRect(i - (cameraX % 30), canvas.height - groundHeight, 1, groundHeight);
-            }
 
             // 落とし穴を描画 - Apple風のデザイン
             for (let pit of pits) {
