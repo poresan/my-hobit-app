@@ -8,486 +8,40 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>ランニングゲーム</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #2d3561 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.15) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .game-container {
-            width: 100%;
-            max-width: 800px;
-            text-align: center;
-            position: relative;
-            z-index: 1;
-            animation: fadeIn 1s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.8);
-            text-decoration: none;
-            font-weight: 400;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-size: 1em;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-            padding: 8px 16px;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .back-link:hover {
-            opacity: 1;
-            color: white;
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-        }
-
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
-            color: white;
-            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
-            font-weight: 300;
-            letter-spacing: -0.5px;
-            animation: titleFloat 3s ease-in-out infinite;
-        }
-
-        @keyframes titleFloat {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-5px);
-            }
-        }
-
-        .game-info {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
-            color: white;
-            font-size: 1.2em;
-            font-weight: 500;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .info-item {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .info-label {
-            font-size: 0.7em;
-            opacity: 0.9;
-        }
-
-        .info-value {
-            font-size: 1.3em;
-            font-weight: 600;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            transition: transform 0.3s ease;
-        }
-
-        .info-value:hover {
-            transform: scale(1.1);
-        }
-
-        #gameCanvas {
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            background: linear-gradient(to bottom, #1e3a5f 0%, #2d5a7f 50%, #4a7ba7 100%);
-            box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.5),
-                0 0 0 1px rgba(255, 255, 255, 0.05) inset,
-                0 1px 0 rgba(255, 255, 255, 0.1) inset;
-            display: block;
-            width: 100%;
-            max-width: 800px;
-            height: 400px;
-            margin: 0 auto;
-            backdrop-filter: blur(10px);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        #gameCanvas:hover {
-            transform: scale(1.01);
-        }
-
-        .controls {
-            margin-top: 20px;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1em;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-            font-weight: 300;
-        }
-
-        .jump-btn {
-            margin-top: 15px;
-            padding: 16px 48px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.2em;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 
-                0 8px 24px rgba(102, 126, 234, 0.4),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-            touch-action: manipulation;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .jump-btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .jump-btn:active::before {
-            width: 300px;
-            height: 300px;
-        }
-
-        .jump-btn:active {
-            transform: scale(0.96);
-            box-shadow: 
-                0 4px 12px rgba(102, 126, 234, 0.3),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-        }
-
-        .game-over-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .game-over-modal.show {
-            display: flex;
-        }
-
-        .modal-content {
-            background: rgba(30, 30, 30, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 40px;
-            border-radius: 24px;
-            text-align: center;
-            box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.8),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-            max-width: 90%;
-            width: 400px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .modal-content h2 {
-            font-size: 2em;
-            margin-bottom: 20px;
-            color: white;
-            font-weight: 300;
-            letter-spacing: -0.5px;
-        }
-
-        .modal-content p {
-            font-size: 1.2em;
-            margin-bottom: 10px;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .restart-btn {
-            padding: 16px 48px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.1em;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            margin-top: 20px;
-            box-shadow: 
-                0 8px 24px rgba(102, 126, 234, 0.4),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .restart-btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .restart-btn:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-
-        .restart-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 
-                0 12px 32px rgba(102, 126, 234, 0.5),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-        }
-
-        .stage-clear-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .stage-clear-modal.show {
-            display: flex;
-        }
-
-        .stage-clear-content {
-            background: rgba(30, 30, 30, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 40px;
-            border-radius: 24px;
-            text-align: center;
-            box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.8),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-            max-width: 90%;
-            width: 400px;
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .stage-clear-content h2 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
-        }
-
-        .stage-clear-content p {
-            font-size: 1.3em;
-            margin-bottom: 30px;
-        }
-
-        .next-stage-btn {
-            padding: 16px 48px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.1em;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 
-                0 8px 24px rgba(102, 126, 234, 0.4),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .next-stage-btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .next-stage-btn:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-
-        .next-stage-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 
-                0 12px 32px rgba(102, 126, 234, 0.5),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-        }
-
-        .start-section {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .start-btn {
-            padding: 16px 48px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.3em;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 
-                0 8px 24px rgba(102, 126, 234, 0.4),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .start-btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .start-btn:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-
-        .start-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 
-                0 12px 32px rgba(102, 126, 234, 0.5),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-        }
-
-        .start-btn:active {
-            transform: translateY(0);
-        }
-
-        .start-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5);
-        }
-
-        .start-btn:active {
-            transform: translateY(0);
-        }
-
-        .start-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .last-update {
-            margin-top: 10px;
-            font-size: 0.85em;
-            color: rgba(255, 255, 255, 0.8);
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        @media (max-width: 600px) {
-            h1 {
-                font-size: 2em;
-            }
-
-            .game-info {
-                font-size: 1em;
-            }
-
-            #gameCanvas {
-                height: 300px;
-            }
-        }
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:linear-gradient(135deg,#0a0e27 0%,#1a1f3a 50%,#2d3561 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow:hidden;position:relative}
+        .game-container{width:100%;max-width:800px;text-align:center;position:relative;z-index:1;animation:fadeIn 1s ease-out}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .back-link{display:inline-block;margin-bottom:20px;color:rgba(255,255,255,.8);text-decoration:none;padding:8px 16px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);transition:transform .3s}
+        .back-link:hover{color:#fff;background:rgba(255,255,255,.1);transform:translateY(-2px)}
+        h1{font-size:2.5em;margin-bottom:20px;color:#fff;font-weight:300;animation:titleFloat 3s ease-in-out infinite}
+        @keyframes titleFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+        .game-info{display:flex;justify-content:space-around;margin-bottom:20px;color:#fff;font-size:1.2em;background:rgba(255,255,255,.05);padding:15px;border-radius:16px;border:1px solid rgba(255,255,255,.1)}
+        .info-item{display:flex;flex-direction:column;gap:5px}
+        .info-label{font-size:.7em;opacity:.9}
+        .info-value{font-size:1.3em;font-weight:600;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        #gameCanvas{border:1px solid rgba(255,255,255,.1);border-radius:24px;background:linear-gradient(to bottom,#1e3a5f,#2d5a7f,#4a7ba7);display:block;width:100%;max-width:800px;height:400px;margin:0 auto}
+        .controls{margin-top:20px;color:rgba(255,255,255,.8);font-size:1em}
+        .btn{padding:16px 48px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:50px;font-weight:500;cursor:pointer;transition:transform .3s;box-shadow:0 8px 24px rgba(102,126,234,.4);touch-action:manipulation}
+        .jump-btn{margin-top:15px;font-size:1.2em}
+        .jump-btn:active{transform:scale(.96)}
+        .restart-btn,.next-stage-btn{margin-top:20px;font-size:1.1em}
+        .restart-btn:hover,.next-stage-btn:hover{transform:translateY(-2px)}
+        .start-btn{font-size:1.3em}
+        .start-btn:hover{transform:translateY(-2px)}
+        .start-btn:active{transform:translateY(0)}
+        .start-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+        .modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;z-index:1000}
+        .modal.show{display:flex}
+        .modal-content{background:rgba(30,30,30,.95);padding:40px;border-radius:24px;text-align:center;max-width:90%;width:400px;border:1px solid rgba(255,255,255,.1);animation:modalIn .4s ease-out}
+        @keyframes modalIn{from{opacity:0;transform:translateY(-20px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+        .modal-content h2{font-size:2em;margin-bottom:20px;color:#fff;font-weight:300}
+        .modal-content p{font-size:1.2em;margin-bottom:10px;color:rgba(255,255,255,.7)}
+        .stage-clear-content h2{font-size:2.5em}
+        .stage-clear-content p{font-size:1.3em;margin-bottom:30px}
+        .start-section{margin-bottom:20px;text-align:center}
+        .last-update{margin-top:10px;font-size:.85em;color:rgba(255,255,255,.8)}
+        @media(max-width:600px){h1{font-size:2em}.game-info{font-size:1em}#gameCanvas{height:300px}}
     </style>
 </head>
 <body>
@@ -496,7 +50,7 @@
         <h1>🏃 ランニングゲーム</h1>
         
         <div class="start-section">
-            <button class="start-btn" id="startBtn">ゲーム開始</button>
+            <button class="btn start-btn" id="startBtn">ゲーム開始</button>
             <div class="last-update" id="lastUpdate"></div>
             <div id="errorMessage" style="display: none; color: #ff6b6b; margin-top: 10px; padding: 10px; background: rgba(255, 107, 107, 0.1); border-radius: 8px; font-size: 0.9em;"></div>
         </div>
@@ -516,23 +70,23 @@
 
         <div class="controls">
             <p>スペースキーまたはボタンでジャンプ</p>
-            <button class="jump-btn" id="jumpBtn">ジャンプ！</button>
+            <button class="btn jump-btn" id="jumpBtn">ジャンプ！</button>
         </div>
     </div>
 
-    <div class="game-over-modal" id="gameOverModal">
+    <div class="modal" id="gameOverModal">
         <div class="modal-content">
             <h2>ゲームオーバー</h2>
             <p>障害物に当たってしまいました</p>
-            <button class="restart-btn" onclick="restartStage()">もう一度挑戦</button>
+            <button class="btn restart-btn" onclick="restartStage()">もう一度挑戦</button>
         </div>
     </div>
 
-    <div class="stage-clear-modal" id="stageClearModal">
-        <div class="stage-clear-content">
+    <div class="modal" id="stageClearModal">
+        <div class="modal-content stage-clear-content">
             <h2>🎉 ステージクリア！</h2>
             <p id="stageClearMessage">ステージ1をクリアしました！</p>
-            <button class="next-stage-btn" onclick="nextStage()">次のステージへ</button>
+            <button class="btn next-stage-btn" onclick="nextStage()">次のステージへ</button>
         </div>
     </div>
 
@@ -540,20 +94,12 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
-        // パフォーマンス最適化：モバイルデバイス検出
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
-        const isLowEndDevice = isMobile || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
-        
-        // 軽量モード設定（タブレット/モバイルでは重いエフェクトを無効化）
-        const useLightweightMode = isLowEndDevice;
-        
-        // Canvas描画の最適化（軽量モードでは画像スムージングを無効化してパフォーマンス向上）
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+        const useLightweightMode = isMobile || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
         if (useLightweightMode) {
             ctx.imageSmoothingEnabled = false;
         }
         
-        // キャンバスのサイズを設定
         function resizeCanvas() {
             const maxWidth = 800;
             const maxHeight = 400;
@@ -571,20 +117,18 @@
             canvas.height = height;
         }
         
+        function onResize() { resizeCanvas(); updatePlayerGroundPosition(); }
         resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('resize', onResize);
 
-        // フレームレート制限（タブレットでは30fpsに制限）
         let lastFrameTime = 0;
         const targetFPS = useLightweightMode ? 30 : 60;
         const frameInterval = 1000 / targetFPS;
 
-        // ゲーム状態
         let currentStage = 1;
         let gameRunning = false;
         let gamePaused = false;
 
-        // キャラクター
         const player = {
             x: 100,
             y: 0,
@@ -596,83 +140,42 @@
             color: '#ff6b6b'
         };
 
-        // プレイヤー画像のスプライトシート設定
         const playerSpriteSheet = new Image();
         let playerImageLoaded = false;
-        const spriteFrameCount = 4; // スプライトシートのコマ数
-        let spriteFrameWidth = 0; // 1コマの幅（読み込み後に計算）
-        
-        // スプライトシート画像を読み込む
+        const spriteFrameCount = 4;
+        let spriteFrameWidth = 0;
         playerSpriteSheet.src = 'shiba.png';
-        
         playerSpriteSheet.onload = function() {
             playerImageLoaded = true;
-            // スプライトシートの1コマの幅を計算（横に4コマ並んでいる）
             spriteFrameWidth = playerSpriteSheet.width / spriteFrameCount;
-            
-            // 画像のアスペクト比を維持しながら、高さを180pxに合わせてサイズを調整（約2倍）
             const imageAspectRatio = spriteFrameWidth / playerSpriteSheet.height;
-            player.height = 180; // 約2倍のサイズ
+            player.height = 180;
             player.width = player.height * imageAspectRatio;
-            
-            // 地面の位置を再計算（足が地面につくように）
             updatePlayerGroundPosition();
-            
-            console.log('スプライトシートを読み込みました:', playerSpriteSheet.width + 'x' + playerSpriteSheet.height + 'px');
-            console.log('1コマのサイズ:', spriteFrameWidth + 'x' + playerSpriteSheet.height + 'px');
-            console.log('プレイヤーサイズに調整:', player.width + 'x' + player.height + 'px');
         };
-        
         playerSpriteSheet.onerror = function() {
-            console.warn('スプライトシート画像の読み込みに失敗しました: shiba.png');
-            console.warn('デフォルトの描画を使用します');
             playerImageLoaded = false;
-            // 画像が読み込まれない場合でも、初期値（40×50）で動作するようにする
-            // プレイヤーのサイズは既に初期値（40×50）が設定されているので、そのまま使用
             updatePlayerGroundPosition();
         };
-        
-        // アニメーション設定
         let animationFrameIndex = 0;
         let animationCounter = 0;
-        const animationSpeed = 8; // アニメーションの切り替え速度（小さいほど速い、大きいほど遅い）
-
-        // 地面の高さ
+        const animationSpeed = 8;
         const groundHeight = 50;
-        
-        // 地面の位置を再計算する関数（足が地面につくように）
         function updatePlayerGroundPosition() {
-            // playerとcanvasが定義されているかチェック
             if (typeof player === 'undefined' || !player) return;
             if (!canvas || canvas.height <= 0) return;
-            
             player.groundY = canvas.height - groundHeight - player.height;
-            // ジャンプ中でない場合は地面に配置
-            if (!player.isJumping && player.velocityY === 0) {
-                player.y = player.groundY;
-            }
+            if (!player.isJumping && player.velocityY === 0) player.y = player.groundY;
         }
-        
-        // 初期位置を設定
         updatePlayerGroundPosition();
         
-        // リサイズ時に地面位置を再計算
-        window.addEventListener('resize', function() {
-            updatePlayerGroundPosition();
-        });
 
-        // カメラ（スクロール位置）
         let cameraX = 0;
         let targetCameraX = 0;
-        const scrollSpeed = 1.8; // 横スクロールのスピードを下げる
-
-
-        // 障害物と落とし穴
+        const scrollSpeed = 1.8;
         let obstacles = [];
         let pits = [];
         let goalX = 0;
-
-        // ステージデータ（間隔を倍に、コースも倍に）
         const stages = [
             {
                 obstacles: [
@@ -718,23 +221,17 @@
             }
         ];
 
-        // 物理定数
-        const gravity = 0.12; // ジャンプの滞空時間を長くするためにさらに下げる
-        const jumpPower = -10; // 上昇速度もゆっくりに
+        const gravity = 0.12;
+        const jumpPower = -10;
         const groundFriction = 0.9;
-        const maxJumpHeight = 220; // 最大ジャンプ高さ（画面からはみ出ないように）
-
-        // オーディオコンテキスト（効果音用）
+        const maxJumpHeight = 220;
         let audioContext = null;
-        
-        // オーディオコンテキストを初期化
         function initAudioContext() {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
         }
 
-        // ジャンプ効果音を再生
         function playJumpSound() {
             if (!audioContext) {
                 initAudioContext();
@@ -750,10 +247,8 @@
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
 
-            oscillator.frequency.value = 440; // A4
+            oscillator.frequency.value = 440;
             oscillator.type = 'sine';
-
-            // 音量のエンベロープ（短く軽快な音）
             gainNode.gain.setValueAtTime(0, audioContext.currentTime);
             gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.01);
             gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.1);
@@ -762,7 +257,6 @@
             oscillator.stop(audioContext.currentTime + 0.1);
         }
 
-        // ゲームオーバー効果音を再生
         function playGameOverSound() {
             if (!audioContext) {
                 initAudioContext();
@@ -778,10 +272,8 @@
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
 
-            oscillator.frequency.value = 220; // A3（低い音）
+            oscillator.frequency.value = 220;
             oscillator.type = 'sawtooth';
-
-            // 音量のエンベロープ（下降する音）
             gainNode.gain.setValueAtTime(0, audioContext.currentTime);
             gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
             gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
@@ -792,24 +284,16 @@
             oscillator.stop(audioContext.currentTime + 0.3);
         }
 
-        // ステージを読み込む
         function loadStage(stageNumber) {
             try {
-                if (!canvas || canvas.height === 0) {
-                    console.error('Canvasが初期化されていません');
-                    return;
-                }
-                
+                if (!canvas || canvas.height === 0) return;
                 const stage = stages[stageNumber - 1];
-                if (!stage) {
-                    console.error('ステージが見つかりません:', stageNumber);
-                    return;
-                }
+                if (!stage) return;
                 
                 obstacles = stage.obstacles.map(obs => ({
                     ...obs,
                     y: canvas.height - groundHeight - obs.height,
-                    type: obs.type || 'box' // デフォルトはbox
+                    type: obs.type || 'box'
                 }));
                 pits = stage.pits.map(pit => ({
                     ...pit,
@@ -818,36 +302,27 @@
                 }));
                 goalX = stage.goal;
                 
-                // プレイヤーをリセット
                 player.x = 100;
                 player.velocityY = 0;
                 player.isJumping = false;
                 cameraX = 0;
                 targetCameraX = 0;
-                
-                // 地面の位置を再計算してからプレイヤーを配置
                 updatePlayerGroundPosition();
                 player.y = player.groundY;
                 
                 updateDisplay();
-                console.log('ステージ', stageNumber, 'を読み込みました');
             } catch (error) {
-                console.error('ステージ読み込み時にエラーが発生しました:', error);
                 throw error;
             }
         }
 
-        // ジャンプ
         function jump() {
             if (!player.isJumping && gameRunning && !gamePaused) {
                 player.velocityY = jumpPower;
                 player.isJumping = true;
-                playJumpSound(); // ジャンプ効果音
+                playJumpSound();
             }
         }
-
-        // プレイヤーが障害物の上にいるかチェック
-        // 自キャラの下の部分（足の部分）のどこでも障害物の上に乗っていればtrue
         function isOnObstacle(obs) {
             const obsScreenX = obs.x - cameraX;
             
@@ -871,20 +346,11 @@
             return isInXRange && isOnTop && isFallingOrLanded;
         }
 
-        // 衝突判定
         function checkCollisions() {
-            // 障害物との衝突
             for (let obs of obstacles) {
                 const obsScreenX = obs.x - cameraX;
-                
-                // 四角の障害物の場合
                 if (obs.type === 'box') {
-                    // 上から踏んでいる場合は完全にスキップ（isOnObstacle関数で判定）
-                    if (isOnObstacle(obs)) {
-                        continue; // 衝突しない
-                    }
-                    
-                    // 四角の障害物の側面・下からの衝突のみ判定
+                    if (isOnObstacle(obs)) continue;
                     const playerBottomY = player.y + player.height;
                     const playerTopY = player.y;
                     const playerLeft = player.x;
@@ -893,34 +359,19 @@
                     const obsBottomY = obs.y + obs.height;
                     const obsLeft = obsScreenX;
                     const obsRight = obsScreenX + obs.width;
-                    
-                    // 障害物から降りる時（障害物の右端を超えた時）は死なない
-                    // プレイヤーが障害物の右端を超えている場合は、降りている最中なので衝突しない
-                    const isDescendingFromObstacle = playerLeft > obsRight - 5 && 
-                                                     playerBottomY >= obsTopY - 5 && 
-                                                     playerBottomY <= obsTopY + 10;
-                    
-                    // 側面からの衝突（左右）- ただし、上に乗っている場合や降りている場合は除外
-                    // 左側からの衝突
+                    const isDescendingFromObstacle = playerLeft > obsRight - 5 && playerBottomY >= obsTopY - 5 && playerBottomY <= obsTopY + 10;
                     const isOnLeftSide = playerRight > obsLeft && 
                                         playerRight < obsLeft + 20 &&
                                         playerTopY < obsBottomY && 
                                         playerBottomY > obsTopY &&
                                         !isDescendingFromObstacle;
-                    
-                    // 右側からの衝突（降りている場合は除外）
                     const isOnRightSide = playerLeft < obsRight && 
                                          playerLeft > obsRight - 20 &&
                                          playerTopY < obsBottomY && 
                                          playerBottomY > obsTopY &&
                                          !isDescendingFromObstacle;
                     
-                    if (isOnLeftSide || isOnRightSide) {
-                        return true;
-                    }
-                    
-                    // 下からの衝突（プレイヤーが障害物の下にいて、上に衝突）
-                    // ただし、障害物の上に乗っている場合や降りている場合は除外
+                    if (isOnLeftSide || isOnRightSide) return true;
                     if (playerBottomY > obsTopY && 
                         playerTopY < obsTopY &&
                         playerRight > obsLeft + 5 &&
@@ -929,123 +380,56 @@
                         return true;
                     }
                 } else if (obs.type === 'triangle') {
-                    // 三角の障害物は三角の部分に触れたときのみ死ぬ（さらに小さな判定）
                     const topY = obs.y;
                     const bottomY = obs.y + obs.height;
                     const leftX = obsScreenX;
                     const rightX = obsScreenX + obs.width;
                     const centerX = obsScreenX + obs.width / 2;
-                    
-                    // プレイヤーの矩形と三角の矩形が重なっているかチェック
-                    if (player.x >= rightX || player.x + player.width <= leftX ||
-                        player.y >= bottomY || player.y + player.height <= topY) {
-                        // 矩形が重なっていない場合は衝突しない
-                        continue;
-                    }
-                    
-                    // 当たり判定をさらに小さくするため、プレイヤーの中心のみをチェック
-                    // より厳密に、中心点のみをチェック
+                    if (player.x >= rightX || player.x + player.width <= leftX || player.y >= bottomY || player.y + player.height <= topY) continue;
                     const checkPoint = {
                         x: player.x + player.width / 2,
                         y: player.y + player.height / 2
                     };
-                    
-                    // 中心点が三角の範囲内にいるか
-                    if (checkPoint.x >= leftX && checkPoint.x <= rightX &&
-                        checkPoint.y >= topY && checkPoint.y <= bottomY) {
-                        
-                        // 三角の左側の線: y = topY + (bottomY - topY) * (x - leftX) / (width/2)
-                        // 三角の右側の線: y = topY + (bottomY - topY) * (rightX - x) / (width/2)
+                    if (checkPoint.x >= leftX && checkPoint.x <= rightX && checkPoint.y >= topY && checkPoint.y <= bottomY) {
                         let lineY;
-                        
                         if (checkPoint.x <= centerX) {
-                            // 左側の線
                             lineY = topY + (bottomY - topY) * (checkPoint.x - leftX) / (obs.width / 2);
-                            // ポイントが線より下（三角の内部）にあるか（15ピクセルの大きな余裕で判定を小さく）
-                            if (checkPoint.y >= lineY + 15) {
-                                return true; // 三角の内部にいる
-                            }
+                            if (checkPoint.y >= lineY + 15) return true;
                         } else {
-                            // 右側の線
                             lineY = topY + (bottomY - topY) * (rightX - checkPoint.x) / (obs.width / 2);
-                            // ポイントが線より下（三角の内部）にあるか（15ピクセルの大きな余裕で判定を小さく）
-                            if (checkPoint.y >= lineY + 15) {
-                                return true; // 三角の内部にいる
-                            }
+                            if (checkPoint.y >= lineY + 15) return true;
                         }
                     }
                 }
             }
-
-            // 落とし穴との衝突（プレイヤーが落とし穴の上にいて、地面より下に落ちた場合）
-            // 着地時に少しでも触れていればOK
             for (let pit of pits) {
                 const pitScreenX = pit.x - cameraX;
                 const groundLevel = pit.y;
                 const playerBottom = player.y + player.height;
                 const playerLeft = player.x;
                 const playerRight = player.x + player.width;
-                
-                // プレイヤーが落とし穴の範囲と重なっているか（完全に渡りきっていない場合も含む）
                 const isOverlapping = playerRight > pitScreenX && playerLeft < pitScreenX + pit.width;
-                
-                if (isOverlapping) {
-                    // プレイヤーの足の部分が落とし穴の範囲内にある部分をチェック
-                    const overlapLeft = Math.max(playerLeft, pitScreenX);
-                    const overlapRight = Math.min(playerRight, pitScreenX + pit.width);
-                    
-                    // 重なっている部分の足の部分をチェック（着地時を考慮）
-                    // 自キャラの一部でも着地できていれば死なない
-                    const checkPoints = 50; // チェックポイント数をさらに増やす
-                    let isTouchingGround = false;
-                    
-                    // 重なっている部分の足の部分を均等にチェック
-                    for (let i = 0; i <= checkPoints; i++) {
-                        const ratio = i / checkPoints;
-                        const checkX = overlapLeft + (overlapRight - overlapLeft) * ratio;
-                        const checkY = playerBottom;
-                        
-                        // このポイントが地面に接しているか（80ピクセルの大きな余裕を持たせる）
-                        // 自キャラの一部でも着地できていればOK
-                        if (checkY <= groundLevel + 80) {
-                            isTouchingGround = true;
-                            break;
-                        }
-                    }
-                    
-                    // 完全に地面より下に落ちた場合のみ死ぬ
-                    // 自キャラの一部でも着地できていれば死なない
-                    if (!isTouchingGround && playerBottom > groundLevel + 80) {
-                        return true;
-                    }
-                }
+                if (isOverlapping && playerBottom > groundLevel + 80) return true;
             }
 
             return false;
         }
 
-        // ゴール判定
         function checkGoal() {
             const goalScreenX = goalX - cameraX;
             return player.x >= goalScreenX - 50;
         }
 
-        // 更新表示
         function updateDisplay() {
             document.getElementById('stageDisplay').textContent = currentStage;
             const remainingDistance = Math.max(0, Math.floor((goalX - cameraX - player.x) / 10));
             document.getElementById('distanceDisplay').textContent = remainingDistance;
         }
 
-        // ゲームループ
         function gameLoop() {
             if (!gameRunning || gamePaused) return;
-
-            // カメラをスクロール（滑らかな補間）
             targetCameraX += scrollSpeed;
-            cameraX += (targetCameraX - cameraX) * 0.1; // 滑らかな補間
-            
-            // 走行アニメーションの更新（地面にいる時のみ）
+            cameraX += (targetCameraX - cameraX) * 0.1;
             if (playerImageLoaded && spriteFrameWidth > 0 && !player.isJumping) {
                 animationCounter++;
                 if (animationCounter >= animationSpeed) {
@@ -1054,50 +438,25 @@
                 }
             }
 
-            // プレイヤーの物理（ふんわりしたジャンプ）
-            // ジャンプの頂点付近で重力を弱めることで、より滑らかな動きに
             let currentGravity = gravity;
-            
-            // 上昇中は通常の重力、頂点付近で重力を弱め、下降中は段階的に重力を強める
             if (player.velocityY > 0) {
-                // 下降中：段階的に重力を強める（より自然な動き）
-                // 下降速度が速いほど重力を強く
                 const fallSpeed = Math.min(player.velocityY, 5);
                 currentGravity = gravity * (1 + fallSpeed * 0.1);
             } else if (player.velocityY > -3) {
-                // 頂点付近：重力を大幅に弱める（ふんわり感）
-                const nearTop = (player.velocityY + 3) / 3; // 0 (頂点) から 1 (少し下) への値
-                currentGravity = gravity * (0.3 + nearTop * 0.4); // 0.3倍から0.7倍まで
-            } else {
-                // 上昇中：通常の重力
-                currentGravity = gravity;
+                const nearTop = (player.velocityY + 3) / 3;
+                currentGravity = gravity * (0.3 + nearTop * 0.4);
             }
-            
             player.velocityY += currentGravity;
-            
-            // 最大ジャンプ高さの制限（画面からはみ出ないように）
-            // 制限に近づいたら滑らかに減速させる
             const minY = player.groundY - maxJumpHeight;
             const distanceToLimit = player.y - minY;
-            
             if (distanceToLimit < 20 && player.velocityY < 0) {
-                // 制限に近づいたら（20ピクセル以内）、上昇速度を滑らかに減らす
-                const slowdownFactor = Math.max(0.3, distanceToLimit / 20);
-                player.velocityY *= slowdownFactor;
+                player.velocityY *= Math.max(0.3, distanceToLimit / 20);
             }
-            
             player.y += player.velocityY;
-            
-            // 最終的な制限（完全に超えた場合のみ強制的に止める）
             if (player.y < minY) {
                 player.y = minY;
-                // 完全に止めるのではなく、自然に下降を開始
-                if (player.velocityY < 0) {
-                    player.velocityY = 0;
-                }
+                if (player.velocityY < 0) player.velocityY = 0;
             }
-
-            // 落とし穴の上にいるかチェック
             let onPit = false;
             for (let pit of pits) {
                 const pitScreenX = pit.x - cameraX;
@@ -1497,7 +856,6 @@
             if (errorDiv) {
                 errorDiv.textContent = 'エラー: ' + message;
                 errorDiv.style.display = 'block';
-                console.error(message);
             }
         }
         
@@ -1518,16 +876,9 @@
                 
                 startBtn.disabled = true;
                 startBtn.textContent = 'ゲーム中...';
-                
-                console.log('ゲーム開始処理を実行します...');
-                console.log('Canvasサイズ:', canvas.width, 'x', canvas.height);
-                console.log('プレイヤーサイズ:', player.width, 'x', player.height);
-                
                 loadStage(1);
                 startGame();
-                console.log('ゲーム開始処理が完了しました');
             } catch (error) {
-                console.error('ゲーム開始時にエラーが発生しました:', error);
                 showError(error.message || '不明なエラーが発生しました');
                 const startBtn = document.getElementById('startBtn');
                 if (startBtn) {
@@ -1550,19 +901,9 @@
         }
 
         // イベントリスナー
-        try {
-            const startBtn = document.getElementById('startBtn');
-            if (startBtn) {
-                startBtn.addEventListener('click', handleStart);
-                console.log('スタートボタンのイベントリスナーを設定しました');
-            } else {
-                console.error('スタートボタンが見つかりません');
-                showError('スタートボタンが見つかりません');
-            }
-        } catch (error) {
-            console.error('イベントリスナーの設定時にエラーが発生しました:', error);
-            showError('初期化エラー: ' + error.message);
-        }
+        const startBtnEl = document.getElementById('startBtn');
+        if (startBtnEl) startBtnEl.addEventListener('click', handleStart);
+        else showError('スタートボタンが見つかりません');
         
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
@@ -1619,7 +960,6 @@
 
         // グローバルエラーハンドラー（すべてのエラーをキャッチ）
         window.addEventListener('error', function(event) {
-            console.error('グローバルエラー:', event.error);
             const errorMsg = event.error ? event.error.message : '不明なエラーが発生しました';
             const errorDiv = document.getElementById('errorMessage');
             if (errorDiv) {
@@ -1631,7 +971,6 @@
         });
         
         window.addEventListener('unhandledrejection', function(event) {
-            console.error('未処理のPromise拒否:', event.reason);
             const errorMsg = event.reason ? event.reason.toString() : '不明なエラー';
             const errorDiv = document.getElementById('errorMessage');
             if (errorDiv) {
@@ -1643,13 +982,7 @@
         });
 
         // 初期化
-        try {
-            updateLastUpdateTime();
-            console.log('初期化が完了しました');
-        } catch (error) {
-            console.error('初期化時にエラーが発生しました:', error);
-            showError('初期化エラー: ' + error.message);
-        }
+        try { updateLastUpdateTime(); } catch (e) { showError('初期化エラー: ' + (e.message || e)); }
         
         // オーディオコンテキストを初期化（ユーザーインタラクション後に有効化される）
         
