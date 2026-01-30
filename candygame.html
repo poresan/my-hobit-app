@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>キャンディゲーム</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      background: linear-gradient(180deg, #87ceeb 0%, #e0f6ff 50%, #98fb98 100%);
+      font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1 {
+      color: #ff69b4;
+      text-shadow: 2px 2px 0 #fff;
+      margin-bottom: 10px;
+      font-size: 1.8rem;
+    }
+    .game-area {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 320px;
+      background: linear-gradient(180deg, #87ceeb 0%, #b0e0e6 30%, #90ee90 70%, #7ccd7c 100%);
+    }
+    .ui {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #fff5f8;
+      border-top: 3px solid #ffb6c1;
+    }
+    .score-box {
+      font-size: 1.2rem;
+      color: #c71585;
+      font-weight: bold;
+    }
+    .score-box span { font-size: 1.5rem; }
+    .jump-btn {
+      padding: 14px 32px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #fff;
+      background: linear-gradient(180deg, #ff69b4, #ff1493);
+      border: none;
+      border-radius: 24px;
+      box-shadow: 0 4px 0 #c71585;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.05s;
+    }
+    .jump-btn:hover { background: linear-gradient(180deg, #ff85c1, #ff69b4); }
+    .jump-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #c71585;
+    }
+    .message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 24px 32px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      z-index: 10;
+      display: none;
+    }
+    .message.show { display: block; }
+    .message h2 { color: #ff69b4; margin-bottom: 8px; }
+    .message p { color: #333; margin-bottom: 16px; }
+    .message button {
+      padding: 10px 24px;
+      font-size: 1rem;
+      background: #ff69b4;
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>🍬 キャンディを集めよう 🍬</h1>
+  <p style="color:#666; margin-bottom:12px;">ゴールまでにキャンディをたくさん集めよう！</p>
+  <div class="game-area">
+    <canvas id="gameCanvas" width="480" height="320"></canvas>
+    <div class="message" id="startMessage">
+      <h2>キャンディゲーム</h2>
+      <p>ジャンプボタンでジャンプして<br>キャンディを集めよう！</p>
+      <button id="startBtn">スタート</button>
+    </div>
+    <div class="message" id="goalMessage">
+      <h2>ゴール！</h2>
+      <p id="finalScore">キャンディ 0 個 集めたよ！</p>
+      <button id="retryBtn">もう一度</button>
+    </div>
+    <div class="ui">
+      <div class="score-box">🍬 <span id="score">0</span> 個</div>
+      <button class="jump-btn" id="jumpBtn">ジャンプ</button>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      const jumpBtn = document.getElementById('jumpBtn');
+      const scoreEl = document.getElementById('score');
+      const startMessage = document.getElementById('startMessage');
+      const goalMessage = document.getElementById('goalMessage');
+      const startBtn = document.getElementById('startBtn');
+      const retryBtn = document.getElementById('retryBtn');
+      const finalScoreEl = document.getElementById('finalScore');
+
+      const GRAVITY = 0.6;
+      const JUMP_FORCE = -12;
+      const SCROLL_SPEED = 3;
+      const GIRL_WIDTH = 36;
+      const GIRL_HEIGHT = 52;
+      const CANDY_SIZE = 28;
+      const GOAL_DISTANCE = 3600;
+      const GROUND_Y = 260;
+
+      let gameRunning = false;
+      let scrollX = 0;
+      let girlY = GROUND_Y - GIRL_HEIGHT;
+      let vy = 0;
+      let score = 0;
+      let candies = [];
+      let nextCandyAt = 0;
+      let lastTime = 0;
+
+      function randomBetween(a, b) {
+        return a + Math.random() * (b - a);
+      }
+
+      function init() {
+        scrollX = 0;
+        girlY = GROUND_Y - GIRL_HEIGHT;
+        vy = 0;
+        score = 0;
+        candies = [];
+        nextCandyAt = 200;
+        scoreEl.textContent = '0';
+        goalMessage.classList.remove('show');
+      }
+
+      function drawGround() {
+        const tileW = 48;
+        const start = Math.floor(scrollX / tileW) * tileW;
+        for (let x = start; x < scrollX + canvas.width + tileW; x += tileW) {
+          ctx.fillStyle = '#8B4513';
+          ctx.fillRect(x - scrollX, GROUND_Y, tileW, canvas.height - GROUND_Y);
+          ctx.fillStyle = '#228B22';
+          ctx.fillRect(x - scrollX, GROUND_Y, tileW, 8);
+        }
+      }
+
+      function drawGirl() {
+        const x = 80;
+        const localY = girlY;
+        ctx.save();
+        ctx.translate(x, localY);
+        ctx.fillStyle = '#ffb6c1';
+        ctx.beginPath();
+        ctx.ellipse(GIRL_WIDTH/2, 14, 10, 12, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = '#ff69b4';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#ff69b4';
+        ctx.fillRect(6, 26, 24, 22);
+        ctx.fillRect(4, 46, 10, 8);
+        ctx.fillRect(22, 46, 10, 8);
+        ctx.fillStyle = '#ffc0cb';
+        ctx.beginPath();
+        ctx.arc(GIRL_WIDTH/2, 10, 4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawCandy(c) {
+        const x = c.x - scrollX;
+        if (x < -CANDY_SIZE || x > canvas.width + CANDY_SIZE) return;
+        const y = c.y;
+        ctx.save();
+        ctx.translate(x + CANDY_SIZE/2, y + CANDY_SIZE/2);
+        ctx.rotate(c.rot || 0);
+        ctx.translate(-CANDY_SIZE/2, -CANDY_SIZE/2);
+        ctx.fillStyle = c.color || '#ff69b4';
+        ctx.beginPath();
+        ctx.rect(2, 8, CANDY_SIZE - 4, 12);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.globalAlpha = 0.8;
+        ctx.fillRect(8, 10, 4, 8);
+        ctx.globalAlpha = 1;
+        ctx.restore();
+      }
+
+      function drawGoal() {
+        const goalX = GOAL_DISTANCE - scrollX;
+        if (goalX > canvas.width + 50) return;
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(goalX, GROUND_Y - 80, 24, 80);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText('GOAL', goalX + 2, GROUND_Y - 30);
+      }
+
+      function spawnCandy() {
+        const baseX = scrollX + canvas.width + randomBetween(80, 220);
+        const y = GROUND_Y - CANDY_SIZE - randomBetween(10, 80);
+        const colors = ['#ff69b4', '#ff1493', '#ffb6c1', '#ff85c1', '#ffc0cb'];
+        candies.push({
+          x: baseX,
+          y: y,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rot: randomBetween(0, 0.3)
+        });
+      }
+
+      function checkCandyCollision() {
+        const girlLeft = 80;
+        const girlRight = 80 + GIRL_WIDTH;
+        const girlTop = girlY;
+        const girlBottom = girlY + GIRL_HEIGHT;
+        candies = candies.filter(c => {
+          const cx = c.x - scrollX;
+          const cr = cx + CANDY_SIZE;
+          const cb = c.y + CANDY_SIZE;
+          if (girlRight >= cx && girlLeft <= cr && girlBottom >= c.y && girlTop <= cb) {
+            score++;
+            scoreEl.textContent = score;
+            return false;
+          }
+          return true;
+        });
+      }
+
+      function update(dt) {
+        if (!gameRunning) return;
+        scrollX += SCROLL_SPEED;
+        vy += GRAVITY;
+        girlY += vy;
+        if (girlY >= GROUND_Y - GIRL_HEIGHT) {
+          girlY = GROUND_Y - GIRL_HEIGHT;
+          vy = 0;
+        }
+        if (scrollX >= nextCandyAt) {
+          spawnCandy();
+          nextCandyAt = scrollX + randomBetween(150, 350);
+        }
+        candies.forEach(c => { c.rot += 0.02; });
+        checkCandyCollision();
+        if (scrollX >= GOAL_DISTANCE) {
+          gameRunning = false;
+          finalScoreEl.textContent = `キャンディ ${score} 個 集めたよ！`;
+          goalMessage.classList.add('show');
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGround();
+        candies.forEach(drawCandy);
+        drawGirl();
+        drawGoal();
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`ゴールまで ${Math.max(0, Math.ceil((GOAL_DISTANCE - scrollX) / 50))} m`, 10, 24);
+      }
+
+      function loop(t) {
+        const dt = Math.min((t - lastTime) / 16, 4);
+        lastTime = t;
+        update(dt);
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      jumpBtn.addEventListener('click', () => {
+        if (!gameRunning) return;
+        if (girlY >= GROUND_Y - GIRL_HEIGHT - 2) {
+          vy = JUMP_FORCE;
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          jumpBtn.click();
+        }
+      });
+
+      startBtn.addEventListener('click', () => {
+        startMessage.classList.remove('show');
+        init();
+        gameRunning = true;
+        lastTime = performance.now();
+      });
+
+      retryBtn.addEventListener('click', () => {
+        goalMessage.classList.remove('show');
+        init();
+        gameRunning = true;
+        lastTime = performance.now();
+      });
+
+      startMessage.classList.add('show');
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>
