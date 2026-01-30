@@ -133,9 +133,14 @@
       const SCROLL_SPEED = 3;
       const GIRL_WIDTH = 36;
       const GIRL_HEIGHT = 52;
-      const CANDY_SIZE = 28;
+      const ITEM_SIZE = 40;
       const GOAL_DISTANCE = 3600;
       const GROUND_Y = 260;
+
+      const imgCandy = new Image();
+      imgCandy.src = 'candy.png';
+      const imgSoftcream = new Image();
+      imgSoftcream.src = 'softcream.png';
 
       let gameRunning = false;
       let scrollX = 0;
@@ -197,24 +202,28 @@
 
       function drawCandy(c) {
         const x = c.x - scrollX;
-        if (x < -CANDY_SIZE || x > canvas.width + CANDY_SIZE) return;
+        if (x < -ITEM_SIZE || x > canvas.width + ITEM_SIZE) return;
         const y = c.y;
-        ctx.save();
-        ctx.translate(x + CANDY_SIZE/2, y + CANDY_SIZE/2);
-        ctx.rotate(c.rot || 0);
-        ctx.translate(-CANDY_SIZE/2, -CANDY_SIZE/2);
-        ctx.fillStyle = c.color || '#ff69b4';
-        ctx.beginPath();
-        ctx.rect(2, 8, CANDY_SIZE - 4, 12);
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.fillStyle = '#fff';
-        ctx.globalAlpha = 0.8;
-        ctx.fillRect(8, 10, 4, 8);
-        ctx.globalAlpha = 1;
-        ctx.restore();
+        const img = c.type === 'softcream' ? imgSoftcream : imgCandy;
+        if (img && img.complete && img.naturalWidth > 0) {
+          ctx.save();
+          ctx.translate(x + ITEM_SIZE/2, y + ITEM_SIZE/2);
+          ctx.rotate(c.rot || 0);
+          ctx.translate(-ITEM_SIZE/2, -ITEM_SIZE/2);
+          ctx.drawImage(img, 0, 0, ITEM_SIZE, ITEM_SIZE);
+          ctx.restore();
+        } else {
+          ctx.save();
+          ctx.translate(x + ITEM_SIZE/2, y + ITEM_SIZE/2);
+          ctx.rotate(c.rot || 0);
+          ctx.translate(-ITEM_SIZE/2, -ITEM_SIZE/2);
+          ctx.fillStyle = c.color || '#ff69b4';
+          ctx.fillRect(4, 10, ITEM_SIZE - 8, ITEM_SIZE - 16);
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(4, 10, ITEM_SIZE - 8, ITEM_SIZE - 16);
+          ctx.restore();
+        }
       }
 
       function drawGoal() {
@@ -229,11 +238,13 @@
 
       function spawnCandy() {
         const baseX = scrollX + canvas.width + randomBetween(80, 220);
-        const y = GROUND_Y - CANDY_SIZE - randomBetween(10, 80);
+        const y = GROUND_Y - ITEM_SIZE - randomBetween(10, 80);
+        const type = Math.random() < 0.5 ? 'candy' : 'softcream';
         const colors = ['#ff69b4', '#ff1493', '#ffb6c1', '#ff85c1', '#ffc0cb'];
         candies.push({
           x: baseX,
           y: y,
+          type: type,
           color: colors[Math.floor(Math.random() * colors.length)],
           rot: randomBetween(0, 0.3)
         });
@@ -246,8 +257,8 @@
         const girlBottom = girlY + GIRL_HEIGHT;
         candies = candies.filter(c => {
           const cx = c.x - scrollX;
-          const cr = cx + CANDY_SIZE;
-          const cb = c.y + CANDY_SIZE;
+          const cr = cx + ITEM_SIZE;
+          const cb = c.y + ITEM_SIZE;
           if (girlRight >= cx && girlLeft <= cr && girlBottom >= c.y && girlTop <= cb) {
             score++;
             scoreEl.textContent = score;
