@@ -24,7 +24,7 @@
     .game-area {
       position: relative;
       width: 100%;
-      max-width: 480px;
+      max-width: 560px;
       background: #fff;
       border-radius: 16px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.2);
@@ -33,7 +33,7 @@
     #gameCanvas {
       display: block;
       width: 100%;
-      height: 320px;
+      height: 400px;
       background: linear-gradient(180deg, #87ceeb 0%, #b0e0e6 30%, #90ee90 70%, #7ccd7c 100%);
     }
     .ui {
@@ -99,7 +99,7 @@
   <h1>🍬 キャンディを集めよう 🍬</h1>
   <p style="color:#666; margin-bottom:12px;">ゴールまでにキャンディをたくさん集めよう！</p>
   <div class="game-area">
-    <canvas id="gameCanvas" width="480" height="320"></canvas>
+    <canvas id="gameCanvas" width="560" height="400"></canvas>
     <div class="message" id="startMessage">
       <h2>キャンディゲーム</h2>
       <p>ジャンプボタンでジャンプして<br>キャンディを集めよう！</p>
@@ -129,13 +129,49 @@
       const finalScoreEl = document.getElementById('finalScore');
 
       const GRAVITY = 0.6;
-      const JUMP_FORCE = -24;
+      const JUMP_FORCE = -16;
       const SCROLL_SPEED = 3;
       const GIRL_WIDTH = 36;
       const GIRL_HEIGHT = 52;
       const ITEM_SIZE = 40;
       const GOAL_DISTANCE = 3600;
-      const GROUND_Y = 260;
+      const GROUND_Y = 340;
+
+      let audioCtx = null;
+      function getAudioCtx() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        return audioCtx;
+      }
+      function playJumpSound() {
+        try {
+          const ctx = getAudioCtx();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.value = 380;
+          osc.type = 'sine';
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+          osc.start(ctx.currentTime);
+          osc.stop(ctx.currentTime + 0.12);
+        } catch (e) {}
+      }
+      function playCollectSound() {
+        try {
+          const ctx = getAudioCtx();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.value = 880;
+          osc.type = 'sine';
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+          osc.start(ctx.currentTime);
+          osc.stop(ctx.currentTime + 0.15);
+        } catch (e) {}
+      }
 
       const imgCandy = new Image();
       imgCandy.src = 'candy.png';
@@ -285,6 +321,7 @@
           if (girlRight >= cx && girlLeft <= cr && girlBottom >= c.y && girlTop <= cb) {
             score++;
             scoreEl.textContent = score;
+            playCollectSound();
             return false;
           }
           return true;
@@ -333,9 +370,12 @@
       }
 
       jumpBtn.addEventListener('click', () => {
+        if (!audioCtx) getAudioCtx();
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         if (!gameRunning) return;
         if (girlY >= GROUND_Y - GIRL_HEIGHT - 2) {
           vy = JUMP_FORCE;
+          playJumpSound();
         }
       });
 
@@ -348,6 +388,8 @@
 
       startBtn.addEventListener('click', () => {
         startMessage.classList.remove('show');
+        getAudioCtx();
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         init();
         gameRunning = true;
         lastTime = performance.now();
