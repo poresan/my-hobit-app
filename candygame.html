@@ -133,6 +133,9 @@
       const SCROLL_SPEED = 3;
       const GIRL_WIDTH = 36;
       const GIRL_HEIGHT = 52;
+      const GIRL_SCALE = 1.5;
+      const GIRL_DISPLAY_WIDTH = GIRL_WIDTH * GIRL_SCALE;
+      const GIRL_DISPLAY_HEIGHT = GIRL_HEIGHT * GIRL_SCALE;
       const ITEM_SIZE = 40;
       const GOAL_DISTANCE = 3600;
       const GROUND_Y = 340;
@@ -182,7 +185,7 @@
 
       let gameRunning = false;
       let scrollX = 0;
-      let girlY = GROUND_Y - GIRL_HEIGHT;
+      let girlY = GROUND_Y - GIRL_DISPLAY_HEIGHT;
       let vy = 0;
       let score = 0;
       let candies = [];
@@ -195,7 +198,7 @@
 
       function init() {
         scrollX = 0;
-        girlY = GROUND_Y - GIRL_HEIGHT;
+        girlY = GROUND_Y - GIRL_DISPLAY_HEIGHT;
         vy = 0;
         score = 0;
         candies = [];
@@ -219,10 +222,17 @@
         const x = 80;
         const localY = girlY;
         if (imgCandygirl.complete && imgCandygirl.naturalWidth > 0) {
-          ctx.drawImage(imgCandygirl, x, localY, GIRL_WIDTH, GIRL_HEIGHT);
+          ctx.save();
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.globalAlpha = 1;
+          ctx.drawImage(imgCandygirl, x, localY, GIRL_DISPLAY_WIDTH, GIRL_DISPLAY_HEIGHT);
+          ctx.restore();
         } else {
           ctx.save();
           ctx.translate(x, localY);
+          ctx.scale(GIRL_SCALE, GIRL_SCALE);
           ctx.fillStyle = '#ffb6c1';
           ctx.beginPath();
           ctx.ellipse(GIRL_WIDTH/2, 14, 10, 12, 0, 0, Math.PI*2);
@@ -316,9 +326,9 @@
 
       function checkCandyCollision() {
         const girlLeft = 80;
-        const girlRight = 80 + GIRL_WIDTH;
+        const girlRight = 80 + GIRL_DISPLAY_WIDTH;
         const girlTop = girlY;
-        const girlBottom = girlY + GIRL_HEIGHT;
+        const girlBottom = girlY + GIRL_DISPLAY_HEIGHT;
         candies = candies.filter(c => {
           const size = getItemSize(c);
           const cx = c.x - scrollX;
@@ -339,8 +349,8 @@
         scrollX += SCROLL_SPEED;
         vy += GRAVITY;
         girlY += vy;
-        if (girlY >= GROUND_Y - GIRL_HEIGHT) {
-          girlY = GROUND_Y - GIRL_HEIGHT;
+        if (girlY >= GROUND_Y - GIRL_DISPLAY_HEIGHT) {
+          girlY = GROUND_Y - GIRL_DISPLAY_HEIGHT;
           vy = 0;
         }
         if (scrollX >= nextCandyAt) {
@@ -379,7 +389,7 @@
         if (!audioCtx) getAudioCtx();
         if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         if (!gameRunning) return;
-        if (girlY >= GROUND_Y - GIRL_HEIGHT - 2) {
+        if (girlY >= GROUND_Y - GIRL_DISPLAY_HEIGHT - 2) {
           vy = JUMP_FORCE;
           playJumpSound();
         }
