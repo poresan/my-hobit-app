@@ -181,36 +181,7 @@
       const imgSoftcream = new Image();
       imgSoftcream.src = 'softcream.png';
       const imgCandygirl = new Image();
-      let girlImageTransparent = null;
-
-      function makeBackgroundTransparent(srcImage) {
-        const w = srcImage.naturalWidth;
-        const h = srcImage.naturalHeight;
-        const off = document.createElement('canvas');
-        off.width = w;
-        off.height = h;
-        const c = off.getContext('2d');
-        c.drawImage(srcImage, 0, 0);
-        const d = c.getImageData(0, 0, w, h);
-        const p = d.data;
-        const cornerR = p[0], cornerG = p[1], cornerB = p[2];
-        const threshold = 45;
-        for (let i = 0; i < p.length; i += 4) {
-          const r = p[i], g = p[i+1], b = p[i+2], a = p[i+3];
-          if (a < 10) continue;
-          const dist = Math.abs(r - cornerR) + Math.abs(g - cornerG) + Math.abs(b - cornerB);
-          if (dist < threshold || (r > 248 && g > 248 && b > 248)) {
-            p[i+3] = 0;
-          }
-        }
-        c.putImageData(d, 0, 0);
-        return off;
-      }
-
-      imgCandygirl.onload = function() {
-        girlImageTransparent = makeBackgroundTransparent(imgCandygirl);
-      };
-      imgCandygirl.src = 'candygirl.png';
+      imgCandygirl.src = 'candygirl2.png';
 
       let gameRunning = false;
       let scrollX = 0;
@@ -250,14 +221,13 @@
       function drawGirl() {
         const x = 80;
         const localY = girlY;
-        const src = girlImageTransparent || (imgCandygirl.complete && imgCandygirl.naturalWidth > 0 ? imgCandygirl : null);
-        if (src) {
+        if (imgCandygirl.complete && imgCandygirl.naturalWidth > 0) {
           ctx.save();
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
           ctx.globalCompositeOperation = 'source-over';
           ctx.globalAlpha = 1;
-          ctx.drawImage(src, 0, 0, src.width || src.naturalWidth, src.height || src.naturalHeight, x, localY, GIRL_DISPLAY_WIDTH, GIRL_DISPLAY_HEIGHT);
+          ctx.drawImage(imgCandygirl, x, localY, GIRL_DISPLAY_WIDTH, GIRL_DISPLAY_HEIGHT);
           ctx.restore();
         } else {
           ctx.save();
