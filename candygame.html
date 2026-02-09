@@ -181,6 +181,18 @@
       const imgSoftcream = new Image();
       imgSoftcream.src = 'softcream.png';
       const imgCandygirl = new Image();
+      let girlSmoothedCanvas = null;
+      imgCandygirl.onload = function() {
+        const w = GIRL_DISPLAY_WIDTH * 2;
+        const h = GIRL_DISPLAY_HEIGHT * 2;
+        girlSmoothedCanvas = document.createElement('canvas');
+        girlSmoothedCanvas.width = w;
+        girlSmoothedCanvas.height = h;
+        const c = girlSmoothedCanvas.getContext('2d');
+        c.imageSmoothingEnabled = true;
+        c.imageSmoothingQuality = 'high';
+        c.drawImage(imgCandygirl, 0, 0, w, h);
+      };
       imgCandygirl.src = 'candygirl2.png';
 
       let gameRunning = false;
@@ -221,12 +233,16 @@
       function drawGirl() {
         const x = 80;
         const localY = girlY;
-        if (imgCandygirl.complete && imgCandygirl.naturalWidth > 0) {
+        if (girlSmoothedCanvas) {
           ctx.save();
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
-          ctx.globalCompositeOperation = 'source-over';
-          ctx.globalAlpha = 1;
+          ctx.drawImage(girlSmoothedCanvas, 0, 0, girlSmoothedCanvas.width, girlSmoothedCanvas.height, x, localY, GIRL_DISPLAY_WIDTH, GIRL_DISPLAY_HEIGHT);
+          ctx.restore();
+        } else if (imgCandygirl.complete && imgCandygirl.naturalWidth > 0) {
+          ctx.save();
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(imgCandygirl, x, localY, GIRL_DISPLAY_WIDTH, GIRL_DISPLAY_HEIGHT);
           ctx.restore();
         } else {
