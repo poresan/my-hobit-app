@@ -224,7 +224,6 @@
         const gravity = 0.12;
         const jumpPower = -10;
         const groundFriction = 0.9;
-        const maxJumpHeight = 220;
         let audioContext = null;
         function initAudioContext() {
             if (!audioContext) {
@@ -409,7 +408,7 @@
                 const playerLeft = player.x;
                 const playerRight = player.x + player.width;
                 const isOverlapping = playerRight > pitScreenX && playerLeft < pitScreenX + pit.width;
-                if (isOverlapping && playerBottom > groundLevel + 80) return true;
+                if (isOverlapping && playerBottom > groundLevel + 180) return true;
             }
 
             return false;
@@ -447,16 +446,7 @@
                 currentGravity = gravity * (0.3 + nearTop * 0.4);
             }
             player.velocityY += currentGravity;
-            const minY = player.groundY - maxJumpHeight;
-            const distanceToLimit = player.y - minY;
-            if (distanceToLimit < 20 && player.velocityY < 0) {
-                player.velocityY *= Math.max(0.3, distanceToLimit / 20);
-            }
             player.y += player.velocityY;
-            if (player.y < minY) {
-                player.y = minY;
-                if (player.velocityY < 0) player.velocityY = 0;
-            }
             let onPit = false;
             for (let pit of pits) {
                 const pitScreenX = pit.x - cameraX;
