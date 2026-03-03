@@ -108,10 +108,13 @@
     <div class="message" id="goalMessage">
       <h2>ゴール！</h2>
       <p id="finalScore">キャンディ 0 個 集めたよ！</p>
+      <p id="highScoreMessage" style="margin-top:8px;font-weight:bold;color:#ff69b4;">最高記録: 0 個</p>
       <button id="retryBtn">もう一度</button>
     </div>
     <div class="ui">
-      <div class="score-box">🍬 <span id="score">0</span> 個</div>
+      <div class="score-box">
+        🍬 <span id="score">0</span> 個　<span style="color:#999;font-size:0.9rem;">最高: <span id="highScore">0</span></span>
+      </div>
       <button class="jump-btn" id="jumpBtn">ジャンプ</button>
     </div>
   </div>
@@ -127,9 +130,14 @@
       const startBtn = document.getElementById('startBtn');
       const retryBtn = document.getElementById('retryBtn');
       const finalScoreEl = document.getElementById('finalScore');
+      const highScoreEl = document.getElementById('highScore');
+      const highScoreMessageEl = document.getElementById('highScoreMessage');
 
-      const GRAVITY = 0.6;
-      const JUMP_FORCE = -16;
+      const HIGHSCORE_KEY = 'candygame_highscore';
+      let highScore = parseInt(localStorage.getItem(HIGHSCORE_KEY) || '0', 10);
+
+      const GRAVITY = 0.22;
+      const JUMP_FORCE = -8;
       const SCROLL_SPEED = 3;
       const GIRL_WIDTH = 36;
       const GIRL_HEIGHT = 52;
@@ -203,6 +211,7 @@
       let candies = [];
       let nextCandyAt = 0;
       let lastTime = 0;
+      let jumpCount = 0;
 
       function randomBetween(a, b) {
         return a + Math.random() * (b - a);
@@ -213,9 +222,11 @@
         girlY = GROUND_Y - GIRL_DISPLAY_HEIGHT;
         vy = 0;
         score = 0;
+        jumpCount = 0;
         candies = [];
         nextCandyAt = 200;
         scoreEl.textContent = '0';
+        highScoreEl.textContent = highScore;
         goalMessage.classList.remove('show');
       }
 
@@ -368,6 +379,7 @@
         if (girlY >= GROUND_Y - GIRL_DISPLAY_HEIGHT) {
           girlY = GROUND_Y - GIRL_DISPLAY_HEIGHT;
           vy = 0;
+          jumpCount = 0;
         }
         if (scrollX >= nextCandyAt) {
           spawnCandy();
@@ -377,7 +389,13 @@
         checkCandyCollision();
         if (scrollX >= GOAL_DISTANCE) {
           gameRunning = false;
+          if (score > highScore) {
+            highScore = score;
+            localStorage.setItem(HIGHSCORE_KEY, String(highScore));
+            highScoreEl.textContent = highScore;
+          }
           finalScoreEl.textContent = `キャンディ ${score} 個 集めたよ！`;
+          highScoreMessageEl.textContent = `最高記録: ${highScore} 個`;
           goalMessage.classList.add('show');
         }
       }
@@ -405,8 +423,14 @@
         if (!audioCtx) getAudioCtx();
         if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         if (!gameRunning) return;
-        if (girlY >= GROUND_Y - GIRL_DISPLAY_HEIGHT - 2) {
+        const onGround = girlY >= GROUND_Y - GIRL_DISPLAY_HEIGHT - 2;
+        if (onGround && jumpCount === 0) {
           vy = JUMP_FORCE;
+          jumpCount = 1;
+          playJumpSound();
+        } else if (!onGround && jumpCount === 1) {
+          vy = JUMP_FORCE;
+          jumpCount = 2;
           playJumpSound();
         }
       });
@@ -416,6 +440,8 @@
         e.preventDefault();
         if (startMessage.classList.contains('show')) {
           startBtn.click();
+        } else if (goalMessage.classList.contains('show')) {
+          retryBtn.click();
         } else {
           jumpBtn.click();
         }
@@ -437,6 +463,7 @@
         lastTime = performance.now();
       });
 
+      highScoreEl.textContent = highScore;
       startMessage.classList.add('show');
       requestAnimationFrame(loop);
     })();
