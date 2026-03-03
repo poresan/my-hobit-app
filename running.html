@@ -222,7 +222,7 @@
         ];
 
         const gravity = 0.12;
-        const jumpPower = -10;
+        const jumpPower = -6;
         const groundFriction = 0.9;
         let audioContext = null;
         function initAudioContext() {
@@ -447,6 +447,10 @@
             }
             player.velocityY += currentGravity;
             player.y += player.velocityY;
+            if (player.y < 0) {
+                player.y = 0;
+                player.velocityY = 0;
+            }
             let onPit = false;
             for (let pit of pits) {
                 const pitScreenX = pit.x - cameraX;
